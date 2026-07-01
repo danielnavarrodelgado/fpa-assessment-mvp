@@ -59,6 +59,10 @@ const state = {
   items: [],
 };
 
+
+let isApplyingRemoteScenario = false; // NUEVO: evita guardar de vuelta mientras estamos cargando datos remotos
+
+
 const els = {};
 
 document.addEventListener("DOMContentLoaded", init);
@@ -77,6 +81,9 @@ async function init() {
     state.meta = data.meta;
     state.items = data.subcapacities.map(normalizeItem);
     applyStoredScenario();
+
+    await initializeSharedScenario(); // NUEVO: carga o crea el escenario compartido en Firebase
+
     populateCapacityFilter();
     renderAll();
   } catch (error) {
@@ -547,8 +554,68 @@ function unique(values) {
   return [...new Set(values)];
 }
 
+
+async function initializeSharedScenario() {
+  if (!scenarioDatabaseRef) {
+    return;
+  }
+
+  try {
+    const snapshot = await get(scenarioDatabaseRef);
+
+    if (snapshot.exists()) {
+      applyScenarioPayload(snapshot.val());
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(buildScenarioPayload()));
+      showNotice(`Escenario compartido cargado: ${scenarioId}`);
+    } else {
+      await set(scenarioDatabaseRef, buildScenarioPayload());
+      showNotice(`Escenario compartido creado: ${scenarioId}`);
+    }
+
+    subscribeToSharedScenario();
+  } catch (error) {
+    showNotice("No se pudo conectar con el escenario compartido. Se mantiene el modo local.", true);
+    console.error(error);
+  }
+}
+
+function subscribeToSharedScenario() {
+  if (!scenarioDatabaseRef) {
+    return;
+  }
+
+  onValue(scenarioDatabaseRef, (snapshot) => {
+    if (!snapshot.exists()) {
+      return;
+    }
+
+    try {
+      isApplyingRemoteScenario = true;
+
+      applyScenarioPayload(snapshot.val());
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(buildScenarioPayload()));
+      renderAll();
+    } catch (error) {
+      console.error("No se pudo aplicar el escenario remoto.", error);
+    } finally {
+      isApplyingRemoteScenario = false;
+    }
+  });
+}
+
+
 function persistScenario() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(buildScenarioPayload()));
+  const payload = buildScenarioPayload();
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+
+  // NUEVO: si hay scenario en la URL, también guardamos en Firebase
+  if (scenarioDatabaseRef && !isApplyingRemoteScenario) {
+    set(scenarioDatabaseRef, payload).catch((error) => {
+      showNotice("No se pudo guardar el escenario compartido en Firebase.", true);
+      console.error(error);
+    });
+  }
 }
 
 function applyStoredScenario() {
