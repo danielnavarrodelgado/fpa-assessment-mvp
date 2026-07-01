@@ -27,6 +27,15 @@ const firebaseDatabase = getDatabase(firebaseApp);
 console.log("Firebase conectado correctamente:", firebaseConfig.projectId);
 
 
+
+// Escenario compartido leído desde la URL
+const scenarioId = getScenarioIdFromUrl();
+const scenarioDatabaseRef = scenarioId ? ref(firebaseDatabase, `scenarios/${scenarioId}`) : null;
+
+console.log("Modo escenario compartido:", scenarioId || "modo local sin scenario");
+
+
+
 const DATA_URL = "data/fpa_assessment.json";
 const STORAGE_KEY = "f3m-fpa-assessment-scenario";
 
@@ -57,6 +66,7 @@ document.addEventListener("DOMContentLoaded", init);
 async function init() {
   cacheElements();
   bindGlobalEvents();
+  showScenarioModeNotice();
 
   try {
     const response = await fetch(DATA_URL, { cache: "no-store" });
@@ -721,6 +731,41 @@ function showNotice(message, persistent = false) {
     }
   }, 7000);
 }
+
+
+
+function getScenarioIdFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const rawScenarioId = params.get("scenario");
+
+  if (!rawScenarioId) {
+    return null;
+  }
+
+  const cleanScenarioId = rawScenarioId.trim();
+
+  // Permitimos letras, números, guiones y guiones bajos para evitar rutas raras en Firebase
+  const isValidScenarioId = /^[a-zA-Z0-9_-]{6,120}$/.test(cleanScenarioId);
+
+  if (!isValidScenarioId) {
+    console.warn("Scenario ID inválido. Se usará modo local:", cleanScenarioId);
+    return null;
+  }
+
+  return cleanScenarioId;
+}
+
+
+function showScenarioModeNotice() {
+  if (!scenarioId) {
+    return;
+  }
+
+  showNotice(
+    `Escenario compartido activo: ${scenarioId}. En este paso solo estamos preparando la conexión; el guardado remoto se activará después.`,
+  );
+}
+
 
 function escapeHtml(value) {
   return String(value ?? "")
