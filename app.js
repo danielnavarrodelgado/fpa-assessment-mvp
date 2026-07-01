@@ -1,3 +1,32 @@
+// Firebase SDK - conexión inicial
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import {
+  getDatabase,
+  ref,
+  get,
+  set,
+  onValue,
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+
+// Configuración de Firebase del proyecto fpa-assessment-mvp
+const firebaseConfig = {
+  apiKey: "AIzaSyAyHWPnALB5regOMmeR3C-vVLDTmh6fEio",
+  authDomain: "fpa-assessment-mvp.firebaseapp.com",
+  databaseURL: "https://fpa-assessment-mvp-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "fpa-assessment-mvp",
+  storageBucket: "fpa-assessment-mvp.firebasestorage.app",
+  messagingSenderId: "690455183937",
+  appId: "1:690455183937:web:e9be8095b43f341589fcc0",
+  measurementId: "G-XBHVPCJFFD",
+};
+
+// Inicialización de Firebase
+const firebaseApp = initializeApp(firebaseConfig);
+const firebaseDatabase = getDatabase(firebaseApp);
+
+console.log("Firebase conectado correctamente:", firebaseConfig.projectId);
+
+
 const DATA_URL = "data/fpa_assessment.json";
 const STORAGE_KEY = "f3m-fpa-assessment-scenario";
 
