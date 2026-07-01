@@ -1,0 +1,707 @@
+const DATA_URL = "data/fpa_assessment.json";
+const STORAGE_KEY = "f3m-fpa-assessment-scenario";
+
+const LEVERS = [
+  { key: "procesos", label: "Procesos" },
+  { key: "tecnologia", label: "Tecnología" },
+  { key: "organizacion", label: "Organización" },
+];
+
+const PRIORITY_ORDER = {
+  Alta: 1,
+  Media: 2,
+  Baja: 3,
+  Pendiente: 4,
+};
+
+const STATUS_OPTIONS = ["No iniciado", "En curso", "Completado", "Bloqueado"];
+
+const state = {
+  meta: null,
+  items: [],
+};
+
+const els = {};
+
+document.addEventListener("DOMContentLoaded", init);
+
+async function init() {
+  cacheElements();
+  bindGlobalEvents();
+
+  try {
+    const response = await fetch(DATA_URL, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`No se pudo cargar ${DATA_URL}`);
+    }
+    const data = await response.json();
+    state.meta = data.meta;
+    state.items = data.subcapacities.map(normalizeItem);
+    applyStoredScenario();
+    populateCapacityFilter();
+    renderAll();
+  } catch (error) {
+    showNotice(
+      "No se pudo cargar el JSON de datos. Abre esta carpeta con un servidor local simple, por ejemplo: python -m http.server 8000, y entra en http://localhost:8000/.",
+      true,
+    );
+    console.error(error);
+  }
+}
+
+function cacheElements() {
+  [
+    "loadNotice",
+    "sourceNote",
+    "kpiGrid",
+    "priorityBars",
+    "leverBars",
+    "summaryTable",
+    "capacityFilter",
+    "priorityFilter",
+    "searchInput",
+    "assessmentList",
+    "heatmapTable",
+    "roadmapTable",
+    "importJsonButton",
+    "exportJsonButton",
+    "exportCsvButton",
+    "resetButton",
+    "scenarioFileInput",
+  ].forEach((id) => {
+    els[id] = document.getElementById(id);
+  });
+}
+
+function bindGlobalEvents() {
+  els.capacityFilter.addEventListener("change", renderAll);
+  els.priorityFilter.addEventListener("change", renderAll);
+  els.searchInput.addEventListener("input", renderAll);
+  els.importJsonButton.addEventListener("click", () => els.scenarioFileInput.click());
+  els.scenarioFileInput.addEventListener("change", importScenario);
+  els.exportJsonButton.addEventListener("click", exportScenarioJson);
+  els.exportCsvButton.addEventListener("click", exportCsv);
+  els.resetButton.addEventListener("click", resetScenario);
+}
+
+function normalizeItem(item) {
+  return {
+    ...item,
+    scores: {
+      procesos: toScore(item.scores?.procesos),
+      tecnologia: toScore(item.scores?.tecnologia),
+      organizacion: toScore(item.scores?.organizacion),
+    },
+    owner: item.owner || "",
+    status: item.status || "No iniciado",
+    comentario: item.comentario || item.comentariosHallazgos || "",
+  };
+}
+
+function toScore(value) {
+  const number = Number(value);
+  return Number.isInteger(number) && number >= 1 && number <= 5 ? number : null;
+}
+
+function calculate(item) {
+  const values = LEVERS.map((lever) => item.scores[lever.key]).filter((value) => Number.isFinite(value));
+  if (!values.length) {
+    return {
+      isPending: true,
+      scoreMedio: null,
+      nivel: "",
+      gap: null,
+      prioridad: "Pendiente",
+      oleada: "Pendiente",
+    };
+  }
+
+  const scoreMedio = round2(values.reduce((sum, value) => sum + value, 0) / values.length);
+  const nivel = getMaturityLevel(scoreMedio);
+  const gap = round2(Math.max(0, state.meta.targetMaturity - scoreMedio));
+  const prioridad = gap >= 2 ? "Alta" : gap >= 1 ? "Media" : "Baja";
+  const oleada = prioridad === "Alta" ? "Oleada 1" : prioridad === "Media" ? "Oleada 2" : "Oleada 3";
+
+  return {
+    isPending: false,
+    scoreMedio,
+    nivel,
+    gap,
+    prioridad,
+    oleada,
+  };
+}
+
+function getMaturityLevel(score) {
+  if (score < 1.5) return "1 - Inicial";
+  if (score < 2.5) return "2 - Estructurado";
+  if (score < 3.5) return "3 - Estandarizado";
+  if (score < 4.5) return "4 - Optimizado";
+  return "5 - Avanzado/Referente";
+}
+
+function round2(value) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function renderAll() {
+  if (!state.items.length) return;
+  els.sourceNote.textContent = `Fuente: ${state.meta.sourceFile} · Objetivo de madurez ${state.meta.targetMaturity}`;
+  renderDashboard();
+  renderAssessments();
+  renderHeatmap();
+  renderRoadmap();
+}
+
+function populateCapacityFilter() {
+  const capacities = unique(state.items.map((item) => item.capacidad));
+  els.capacityFilter.innerHTML = [
+    `<option value="all">Todas</option>`,
+    ...capacities.map((capability) => `<option value="${escapeAttr(capability)}">${escapeHtml(capability)}</option>`),
+  ].join("");
+}
+
+function getVisibleItems() {
+  const capacity = els.capacityFilter.value;
+  const priority = els.priorityFilter.value;
+  const query = els.searchInput.value.trim().toLowerCase();
+
+  return state.items.filter((item) => {
+    const metrics = calculate(item);
+    const matchesCapacity = capacity === "all" || item.capacidad === capacity;
+    const matchesPriority = priority === "all" || metrics.prioridad === priority;
+    const haystack = [
+      item.capacidad,
+      item.subcapacidad,
+      item.objetivoEvaluacion,
+      item.preguntasClave,
+      item.evidencias,
+      item.iniciativaSugerida,
+    ]
+      .join(" ")
+      .toLowerCase();
+    return matchesCapacity && matchesPriority && (!query || haystack.includes(query));
+  });
+}
+
+function renderDashboard() {
+  const metrics = state.items.map((item) => ({ item, metrics: calculate(item) }));
+  const scored = metrics.filter((entry) => !entry.metrics.isPending);
+  const scoreGlobal = average(scored.map((entry) => entry.metrics.scoreMedio));
+  const gapMedio = average(scored.map((entry) => entry.metrics.gap));
+  const highCount = scored.filter((entry) => entry.metrics.prioridad === "Alta").length;
+
+  els.kpiGrid.innerHTML = [
+    kpiCard("Score global dominio", formatNumber(scoreGlobal), scored.length ? "Promedio de subcapacidades puntuadas" : "Pendiente de scoring"),
+    kpiCard("Gap medio vs objetivo", formatNumber(gapMedio), `Objetivo actual: ${state.meta.targetMaturity} - Optimizado`),
+    kpiCard("Subcapacidades puntuadas", `${scored.length}/${state.items.length}`, `${Math.round((scored.length / state.items.length) * 100)}% de avance`),
+    kpiCard("Prioridad alta", String(highCount), "Subcapacidades con gap igual o superior a 2"),
+  ].join("");
+
+  renderPriorityBars(metrics);
+  renderLeverBars();
+  renderSummaryTable();
+}
+
+function kpiCard(label, value, note) {
+  return `
+    <article class="kpi-card">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+      <p>${escapeHtml(note)}</p>
+    </article>
+  `;
+}
+
+function renderPriorityBars(entries) {
+  const counts = { Alta: 0, Media: 0, Baja: 0, Pendiente: 0 };
+  entries.forEach((entry) => {
+    counts[entry.metrics.prioridad] += 1;
+  });
+  const max = Math.max(...Object.values(counts), 1);
+  els.priorityBars.innerHTML = Object.entries(counts)
+    .map(([label, count]) => {
+      const width = Math.round((count / max) * 100);
+      return barRow(label, count, width, priorityColor(label));
+    })
+    .join("");
+}
+
+function renderLeverBars() {
+  const rows = LEVERS.map((lever) => {
+    const avg = average(state.items.map((item) => item.scores[lever.key]).filter((value) => Number.isFinite(value)));
+    const width = avg ? Math.round((avg / 5) * 100) : 0;
+    return barRow(lever.label, formatNumber(avg), width, "#007c89");
+  });
+  els.leverBars.innerHTML = rows.join("");
+}
+
+function barRow(label, value, width, color) {
+  return `
+    <div class="bar-row">
+      <span class="bar-label">${escapeHtml(label)}</span>
+      <span class="bar-track"><span class="bar-fill" style="width:${width}%;background:${color}"></span></span>
+      <span class="bar-value">${escapeHtml(String(value))}</span>
+    </div>
+  `;
+}
+
+function renderSummaryTable() {
+  const capacities = unique(state.items.map((item) => item.capacidad));
+  const rows = capacities.map((capability) => {
+    const items = state.items.filter((item) => item.capacidad === capability);
+    const entries = items.map((item) => ({ item, metrics: calculate(item) }));
+    const scored = entries.filter((entry) => !entry.metrics.isPending);
+    const scoreMedio = average(scored.map((entry) => entry.metrics.scoreMedio));
+    const gap = scoreMedio === null ? null : round2(Math.max(0, state.meta.targetMaturity - scoreMedio));
+    const prioridad = priorityFromGap(gap);
+    return `
+      <tr>
+        <td>${escapeHtml(capability)}</td>
+        <td class="number">${formatNumber(average(items.map((item) => item.scores.procesos).filter(Number.isFinite)))}</td>
+        <td class="number">${formatNumber(average(items.map((item) => item.scores.tecnologia).filter(Number.isFinite)))}</td>
+        <td class="number">${formatNumber(average(items.map((item) => item.scores.organizacion).filter(Number.isFinite)))}</td>
+        <td class="number">${formatNumber(scoreMedio)}</td>
+        <td class="number">${formatNumber(gap)}</td>
+        <td>${priorityBadge(prioridad)}</td>
+        <td class="number">${scored.length}/${items.length}</td>
+      </tr>
+    `;
+  });
+
+  els.summaryTable.innerHTML = `
+    <thead>
+      <tr>
+        <th>Capacidad</th>
+        <th class="number">Procesos</th>
+        <th class="number">Tecnología</th>
+        <th class="number">Organización</th>
+        <th class="number">Score medio</th>
+        <th class="number">Gap</th>
+        <th>Prioridad</th>
+        <th class="number">Avance</th>
+      </tr>
+    </thead>
+    <tbody>${rows.join("")}</tbody>
+  `;
+}
+
+function renderAssessments() {
+  const items = getVisibleItems();
+  if (!items.length) {
+    els.assessmentList.innerHTML = `<div class="empty-state">No hay subcapacidades que coincidan con los filtros actuales.</div>`;
+    return;
+  }
+
+  const template = document.getElementById("assessmentCardTemplate");
+  els.assessmentList.innerHTML = "";
+  items.forEach((item) => {
+    const metrics = calculate(item);
+    const fragment = template.content.cloneNode(true);
+    const card = fragment.querySelector(".assessment-card");
+    card.dataset.id = item.id;
+    fragment.querySelector(".capability-chip").textContent = item.capacidad;
+    fragment.querySelector("h3").textContent = item.subcapacidad;
+    fragment.querySelector(".card-title-block p").textContent = item.objetivoEvaluacion;
+    fragment.querySelector(".score-controls").innerHTML = LEVERS.map((lever) => scoreControl(item, lever)).join("");
+    fragment.querySelector(".score-result").innerHTML = scoreResult(metrics);
+    fragment.querySelector(".maturity-list").innerHTML = Object.entries(item.maturity)
+      .map(([score, text]) => `<li><strong>${score}.</strong> ${escapeHtml(text)}</li>`)
+      .join("");
+    fragment.querySelector(".question-list").innerHTML = item.preguntasClave
+      .split("\n")
+      .map((question) => `<li>${escapeHtml(question)}</li>`)
+      .join("");
+    fragment.querySelector(".evidence-text").textContent = item.evidencias;
+    fragment.querySelector(".initiative-text").textContent = item.iniciativaSugerida;
+    els.assessmentList.appendChild(fragment);
+  });
+
+  els.assessmentList.querySelectorAll(".score-select").forEach((select) => {
+    select.addEventListener("change", handleScoreChange);
+  });
+}
+
+function scoreControl(item, lever) {
+  const current = item.scores[lever.key];
+  const options = [`<option value="">Sin puntuar</option>`]
+    .concat([1, 2, 3, 4, 5].map((value) => `<option value="${value}" ${current === value ? "selected" : ""}>${value}</option>`))
+    .join("");
+  return `
+    <label class="score-field">
+      <span>${escapeHtml(lever.label)}</span>
+      <select class="score-select" data-id="${escapeAttr(item.id)}" data-lever="${lever.key}">
+        ${options}
+      </select>
+    </label>
+  `;
+}
+
+function scoreResult(metrics) {
+  if (metrics.isPending) {
+    return `
+      ${priorityBadge("Pendiente")}
+      <span class="metric-line"><strong>-</strong> score medio</span>
+      <span class="metric-line">Pendiente de scoring</span>
+    `;
+  }
+
+  return `
+    ${priorityBadge(metrics.prioridad)}
+    <span class="metric-line"><strong>${formatNumber(metrics.scoreMedio)}</strong> score medio</span>
+    <span class="metric-line"><strong>${formatNumber(metrics.gap)}</strong> gap · ${escapeHtml(metrics.oleada)}</span>
+    <span class="level-badge">${escapeHtml(metrics.nivel)}</span>
+  `;
+}
+
+function handleScoreChange(event) {
+  const item = state.items.find((entry) => entry.id === event.target.dataset.id);
+  item.scores[event.target.dataset.lever] = toScore(event.target.value);
+  persistScenario();
+  renderAll();
+}
+
+function renderHeatmap() {
+  const rows = getVisibleItems().map((item) => {
+    const metrics = calculate(item);
+    return `
+      <tr>
+        <td>${escapeHtml(item.capacidad)}</td>
+        <td>${escapeHtml(item.subcapacidad)}</td>
+        ${LEVERS.map((lever) => heatScoreCell(item.scores[lever.key])).join("")}
+        ${heatScoreCell(metrics.scoreMedio)}
+        <td class="heat-cell ${gapClass(metrics.gap)}">${formatNumber(metrics.gap)}</td>
+        <td>${priorityBadge(metrics.prioridad)}</td>
+      </tr>
+    `;
+  });
+
+  els.heatmapTable.innerHTML = `
+    <thead>
+      <tr>
+        <th>Capacidad</th>
+        <th>Subcapacidad</th>
+        <th class="number">Procesos</th>
+        <th class="number">Tecnología</th>
+        <th class="number">Organización</th>
+        <th class="number">Score medio</th>
+        <th class="number">Gap</th>
+        <th>Prioridad</th>
+      </tr>
+    </thead>
+    <tbody>${rows.join("") || `<tr><td colspan="8">No hay datos para los filtros actuales.</td></tr>`}</tbody>
+  `;
+}
+
+function renderRoadmap() {
+  const rows = [...state.items]
+    .map((item) => ({ item, metrics: calculate(item) }))
+    .sort((a, b) => {
+      const priorityDiff = PRIORITY_ORDER[a.metrics.prioridad] - PRIORITY_ORDER[b.metrics.prioridad];
+      if (priorityDiff) return priorityDiff;
+      return (b.metrics.gap || 0) - (a.metrics.gap || 0);
+    })
+    .map(({ item, metrics }) => `
+      <tr>
+        <td>${escapeHtml(item.capacidad)}</td>
+        <td>${escapeHtml(item.subcapacidad)}</td>
+        <td class="number">${formatNumber(metrics.gap)}</td>
+        <td>${priorityBadge(metrics.prioridad)}</td>
+        <td>${escapeHtml(item.iniciativaSugerida)}</td>
+        <td><span class="status-chip">${escapeHtml(metrics.oleada)}</span></td>
+        <td><input class="inline-input roadmap-owner" data-id="${escapeAttr(item.id)}" value="${escapeAttr(item.owner)}" placeholder="Owner"></td>
+        <td>${statusSelect(item)}</td>
+        <td><textarea class="roadmap-comment" data-id="${escapeAttr(item.id)}" placeholder="Comentarios">${escapeHtml(item.comentario)}</textarea></td>
+      </tr>
+    `);
+
+  els.roadmapTable.innerHTML = `
+    <thead>
+      <tr>
+        <th>Capacidad</th>
+        <th>Subcapacidad</th>
+        <th class="number">Gap</th>
+        <th>Prioridad</th>
+        <th>Iniciativa sugerida</th>
+        <th>Oleada</th>
+        <th>Owner</th>
+        <th>Estado</th>
+        <th>Comentarios</th>
+      </tr>
+    </thead>
+    <tbody>${rows.join("")}</tbody>
+  `;
+
+  els.roadmapTable.querySelectorAll(".roadmap-owner").forEach((input) => {
+    input.addEventListener("input", handleRoadmapFieldChange);
+  });
+  els.roadmapTable.querySelectorAll(".roadmap-status").forEach((select) => {
+    select.addEventListener("change", handleRoadmapFieldChange);
+  });
+  els.roadmapTable.querySelectorAll(".roadmap-comment").forEach((textarea) => {
+    textarea.addEventListener("input", handleRoadmapFieldChange);
+  });
+}
+
+function statusSelect(item) {
+  return `
+    <select class="inline-input roadmap-status" data-id="${escapeAttr(item.id)}">
+      ${STATUS_OPTIONS.map((status) => `<option value="${escapeAttr(status)}" ${item.status === status ? "selected" : ""}>${escapeHtml(status)}</option>`).join("")}
+    </select>
+  `;
+}
+
+function handleRoadmapFieldChange(event) {
+  const item = state.items.find((entry) => entry.id === event.target.dataset.id);
+  if (event.target.classList.contains("roadmap-owner")) item.owner = event.target.value;
+  if (event.target.classList.contains("roadmap-status")) item.status = event.target.value;
+  if (event.target.classList.contains("roadmap-comment")) item.comentario = event.target.value;
+  persistScenario();
+}
+
+function heatScoreCell(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return `<td class="heat-cell heat-blank">-</td>`;
+  }
+  return `<td class="heat-cell heat-${Math.max(1, Math.min(5, Math.round(number)))}">${formatNumber(number)}</td>`;
+}
+
+function gapClass(value) {
+  if (!Number.isFinite(value)) return "heat-blank";
+  if (value >= 2) return "gap-high";
+  if (value >= 1) return "gap-mid";
+  return "gap-low";
+}
+
+function priorityBadge(priority) {
+  const safePriority = priority || "Pendiente";
+  return `<span class="priority-badge ${safePriority.toLowerCase()}">${escapeHtml(safePriority)}</span>`;
+}
+
+function priorityColor(priority) {
+  if (priority === "Alta") return "#bb3128";
+  if (priority === "Media") return "#c87900";
+  if (priority === "Baja") return "#3e6f11";
+  return "#8a9189";
+}
+
+function priorityFromGap(gap) {
+  if (!Number.isFinite(gap)) return "Pendiente";
+  if (gap >= 2) return "Alta";
+  if (gap >= 1) return "Media";
+  return "Baja";
+}
+
+function average(values) {
+  const clean = values.filter((value) => Number.isFinite(value));
+  if (!clean.length) return null;
+  return round2(clean.reduce((sum, value) => sum + value, 0) / clean.length);
+}
+
+function formatNumber(value) {
+  if (!Number.isFinite(value)) return "-";
+  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0$/, "").replace(/\.0$/, "");
+}
+
+function unique(values) {
+  return [...new Set(values)];
+}
+
+function persistScenario() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(buildScenarioPayload()));
+}
+
+function applyStoredScenario() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  try {
+    applyScenarioPayload(JSON.parse(raw));
+  } catch (error) {
+    localStorage.removeItem(STORAGE_KEY);
+    console.warn("Stored scenario ignored", error);
+  }
+}
+
+function buildScenarioPayload() {
+  return {
+    meta: {
+      app: "F3M FP&A Assessment MVP",
+      exportedAt: new Date().toISOString(),
+      sourceFile: state.meta.sourceFile,
+      targetMaturity: state.meta.targetMaturity,
+    },
+    scores: state.items.map((item) => ({
+      id: item.id,
+      subcapacidad: item.subcapacidad,
+      scores: { ...item.scores },
+      owner: item.owner,
+      status: item.status,
+      comentario: item.comentario,
+    })),
+  };
+}
+
+function applyScenarioPayload(payload) {
+  const updates = Array.isArray(payload.scores)
+    ? payload.scores
+    : Array.isArray(payload.subcapacities)
+      ? payload.subcapacities
+      : null;
+  if (!updates) {
+    throw new Error("El JSON no tiene formato de escenario válido.");
+  }
+
+  const byId = new Map(updates.map((item) => [String(item.id), item]));
+  state.items = state.items.map((item) => {
+    const update = byId.get(item.id);
+    if (!update) return item;
+    const sourceScores = update.scores || {};
+    return {
+      ...item,
+      scores: {
+        procesos: toScore(sourceScores.procesos),
+        tecnologia: toScore(sourceScores.tecnologia),
+        organizacion: toScore(sourceScores.organizacion),
+      },
+      owner: update.owner ?? item.owner,
+      status: STATUS_OPTIONS.includes(update.status) ? update.status : item.status,
+      comentario: update.comentario ?? item.comentario,
+    };
+  });
+}
+
+function importScenario(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      applyScenarioPayload(JSON.parse(reader.result));
+      persistScenario();
+      renderAll();
+      showNotice("Escenario importado correctamente.");
+    } catch (error) {
+      showNotice("El archivo no parece un escenario válido para este MVP.");
+      console.error(error);
+    } finally {
+      event.target.value = "";
+    }
+  };
+  reader.readAsText(file);
+}
+
+function exportScenarioJson() {
+  downloadFile(
+    "f3m_fpa_assessment_scenario.json",
+    JSON.stringify(buildScenarioPayload(), null, 2),
+    "application/json",
+  );
+}
+
+function exportCsv() {
+  const summaryRows = buildSummaryRows();
+  const roadmapRows = state.items
+    .map((item) => {
+      const metrics = calculate(item);
+      return {
+        Tipo: "Roadmap",
+        Capacidad: item.capacidad,
+        Subcapacidad: item.subcapacidad,
+        Procesos: item.scores.procesos ?? "",
+        Tecnologia: item.scores.tecnologia ?? "",
+        Organizacion: item.scores.organizacion ?? "",
+        ScoreMedio: metrics.scoreMedio ?? "",
+        Nivel: metrics.nivel,
+        Gap: metrics.gap ?? "",
+        Prioridad: metrics.prioridad,
+        Oleada: metrics.oleada,
+        IniciativaSugerida: item.iniciativaSugerida,
+        Owner: item.owner,
+        Estado: item.status,
+        Comentarios: item.comentario,
+      };
+    });
+  downloadFile("f3m_fpa_assessment_export.csv", toCsv([...summaryRows, ...roadmapRows]), "text/csv;charset=utf-8");
+}
+
+function buildSummaryRows() {
+  return unique(state.items.map((item) => item.capacidad)).map((capability) => {
+    const items = state.items.filter((item) => item.capacidad === capability);
+    const scored = items.map(calculate).filter((metrics) => !metrics.isPending);
+    const scoreMedio = average(scored.map((metrics) => metrics.scoreMedio));
+    const gap = scoreMedio === null ? null : round2(Math.max(0, state.meta.targetMaturity - scoreMedio));
+    return {
+      Tipo: "Resumen",
+      Capacidad: capability,
+      Subcapacidad: "",
+      Procesos: average(items.map((item) => item.scores.procesos).filter(Number.isFinite)) ?? "",
+      Tecnologia: average(items.map((item) => item.scores.tecnologia).filter(Number.isFinite)) ?? "",
+      Organizacion: average(items.map((item) => item.scores.organizacion).filter(Number.isFinite)) ?? "",
+      ScoreMedio: scoreMedio ?? "",
+      Nivel: scoreMedio === null ? "" : getMaturityLevel(scoreMedio),
+      Gap: gap ?? "",
+      Prioridad: priorityFromGap(gap),
+      Oleada: "",
+      IniciativaSugerida: "",
+      Owner: "",
+      Estado: "",
+      Comentarios: "",
+    };
+  });
+}
+
+function toCsv(rows) {
+  const headers = Object.keys(rows[0]);
+  const csvRows = [headers.join(",")];
+  rows.forEach((row) => {
+    csvRows.push(headers.map((header) => csvEscape(row[header])).join(","));
+  });
+  return csvRows.join("\n");
+}
+
+function csvEscape(value) {
+  const text = String(value ?? "");
+  return /[",\n;]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function downloadFile(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function resetScenario() {
+  localStorage.removeItem(STORAGE_KEY);
+  window.location.reload();
+}
+
+function showNotice(message, persistent = false) {
+  els.loadNotice.textContent = message;
+  els.loadNotice.hidden = false;
+  if (persistent) return;
+  window.setTimeout(() => {
+    if (els.loadNotice.textContent === message) {
+      els.loadNotice.hidden = true;
+    }
+  }, 7000);
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value);
+}

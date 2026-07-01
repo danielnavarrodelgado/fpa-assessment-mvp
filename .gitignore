@@ -1,0 +1,25 @@
+# Dependencias
+node_modules/
+
+# Cachés y runtimes de Codex
+.cache/
+codex-runtimes/
+
+# Compilaciones / salidas generadas
+dist/
+build/
+out/
+
+# Variables de entorno y logs
+.env
+.env.local
+*.log
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Configuración de editores
+.vscode/
+.idea/

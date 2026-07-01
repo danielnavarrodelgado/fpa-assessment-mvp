@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>F3M FP&A Assessment MVP</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="header-inner">
+        <div>
+          <p class="eyebrow">Finance Strategy · F3M</p>
+          <h1>FP&A Assessment MVP</h1>
+          <p class="header-copy">Diagnóstico preliminar de madurez por subcapacidad, palanca y roadmap sugerido.</p>
+        </div>
+        <div class="header-actions" aria-label="Acciones de escenario">
+          <button class="secondary-button" id="importJsonButton" type="button">Importar JSON</button>
+          <button class="secondary-button" id="exportJsonButton" type="button">Exportar JSON</button>
+          <button class="primary-button" id="exportCsvButton" type="button">Exportar CSV</button>
+          <button class="ghost-button" id="resetButton" type="button">Restaurar base</button>
+          <input id="scenarioFileInput" type="file" accept="application/json,.json" hidden>
+        </div>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section class="notice" id="loadNotice" hidden></section>
+
+      <nav class="tabs" aria-label="Secciones del assessment">
+        <a href="#dashboard">Dashboard</a>
+        <a href="#assessment">Assessment</a>
+        <a href="#heatmap">Heatmap</a>
+        <a href="#roadmap">Roadmap</a>
+      </nav>
+
+      <section id="dashboard" class="section-block">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Resumen ejecutivo</p>
+            <h2>Lectura del dominio FP&A</h2>
+          </div>
+          <p class="small-note" id="sourceNote"></p>
+        </div>
+
+        <div class="kpi-grid" id="kpiGrid"></div>
+
+        <div class="split-grid">
+          <div class="panel">
+            <div class="panel-heading">
+              <h3>Prioridad por subcapacidad</h3>
+              <span class="small-note">Basado en gap vs objetivo 4</span>
+            </div>
+            <div class="priority-bars" id="priorityBars"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-heading">
+              <h3>Promedio por palanca</h3>
+              <span class="small-note">Solo scores informados</span>
+            </div>
+            <div class="lever-bars" id="leverBars"></div>
+          </div>
+        </div>
+
+        <div class="table-wrap panel">
+          <div class="panel-heading">
+            <h3>Resumen por capacidad</h3>
+            <span class="small-note">Promedios calculados desde las subcapacidades visibles en el modelo</span>
+          </div>
+          <table class="data-table" id="summaryTable"></table>
+        </div>
+      </section>
+
+      <section id="assessment" class="section-block">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Workspace</p>
+            <h2>Scoring por subcapacidad</h2>
+          </div>
+          <div class="filters">
+            <label>
+              <span>Capacidad</span>
+              <select id="capacityFilter"></select>
+            </label>
+            <label>
+              <span>Prioridad</span>
+              <select id="priorityFilter">
+                <option value="all">Todas</option>
+                <option value="Alta">Alta</option>
+                <option value="Media">Media</option>
+                <option value="Baja">Baja</option>
+                <option value="Pendiente">Pendiente</option>
+              </select>
+            </label>
+            <label class="search-label">
+              <span>Buscar</span>
+              <input id="searchInput" type="search" placeholder="Subcapacidad, iniciativa o evidencia">
+            </label>
+          </div>
+        </div>
+
+        <div class="assessment-list" id="assessmentList"></div>
+      </section>
+
+      <section id="heatmap" class="section-block">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Vista visual</p>
+            <h2>Heatmap de madurez</h2>
+          </div>
+          <p class="small-note">Los colores bajos señalan menor madurez; filas pendientes quedan neutrales.</p>
+        </div>
+        <div class="table-wrap panel">
+          <table class="data-table heatmap-table" id="heatmapTable"></table>
+        </div>
+      </section>
+
+      <section id="roadmap" class="section-block">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Roadmap</p>
+            <h2>Iniciativas sugeridas</h2>
+          </div>
+          <p class="small-note">No se generan nuevas iniciativas: se muestran únicamente las existentes en el Excel.</p>
+        </div>
+        <div class="table-wrap panel">
+          <table class="data-table roadmap-table" id="roadmapTable"></table>
+        </div>
+      </section>
+    </main>
+
+    <template id="assessmentCardTemplate">
+      <article class="assessment-card">
+        <div class="card-main">
+          <div class="card-title-block">
+            <span class="capability-chip"></span>
+            <h3></h3>
+            <p></p>
+          </div>
+          <div class="score-controls" aria-label="Scores por palanca"></div>
+          <div class="score-result"></div>
+        </div>
+        <details>
+          <summary>Ver guía de evaluación, preguntas e iniciativa</summary>
+          <div class="detail-grid">
+            <div>
+              <h4>Niveles de madurez</h4>
+              <ol class="maturity-list"></ol>
+            </div>
+            <div>
+              <h4>Preguntas clave</h4>
+              <ul class="question-list"></ul>
+              <h4>Evidencias</h4>
+              <p class="evidence-text"></p>
+              <h4>Iniciativa sugerida</h4>
+              <p class="initiative-text"></p>
+            </div>
+          </div>
+        </details>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
