@@ -130,35 +130,50 @@ h4 {
 
 
 .save-status {
+position: fixed; /* MODIFICADO: deja de ocupar espacio en el header */
+right: 18px; /* NUEVO: visible en toda la página */
+bottom: 18px; /* NUEVO: visible aunque el usuario esté abajo */
+z-index: 50; /* NUEVO: queda por encima del contenido */
 display: inline-flex;
 align-items: center;
-min-height: 40px;
-padding: 0 12px;
-border: 1px solid rgba(255, 255, 255, 0.28);
+min-height: 38px;
+padding: 0 14px;
+border: 1px solid var(--line);
 border-radius: 999px;
-background: rgba(255, 255, 255, 0.08);
-color: #dfe6df;
-font-size: 0.82rem;
-font-weight: 750;
+background: #ffffff;
+color: var(--ink);
+font-size: 0.84rem;
+font-weight: 800;
+box-shadow: 0 10px 24px rgba(22, 26, 24, 0.16);
 white-space: nowrap;
 }
 
 .save-status.saving {
-border-color: rgba(255, 255, 255, 0.45);
-color: #ffffff;
+border-color: #d8b14a;
+background: #fff7df;
+color: #5b4310;
 }
 
 .save-status.saved {
 border-color: rgba(134, 188, 37, 0.8);
-background: rgba(134, 188, 37, 0.18);
-color: #eaf6d8;
+background: #edf7df;
+color: var(--green-dark);
 }
 
 .save-status.error {
 border-color: rgba(187, 49, 40, 0.9);
-background: rgba(187, 49, 40, 0.18);
-color: #ffe5e1;
+background: #fde7e3;
+color: var(--red);
 }
+
+@media (max-width: 720px) {
+.save-status {
+right: 14px;
+bottom: 14px;
+max-width: calc(100% - 28px);
+}
+}
+
 
 
 .primary-button,
