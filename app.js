@@ -1226,10 +1226,20 @@ function downloadFile(filename, content, type) {
   URL.revokeObjectURL(url);
 }
 
+
 function resetScenario() {
+  const confirmed = window.confirm(
+    "¿Seguro que quieres restaurar la base? Se perderán los cambios guardados localmente en este navegador.",
+  ); // NUEVO: pide confirmación antes de borrar datos locales
+
+  if (!confirmed) {
+    return; // NUEVO: si el usuario cancela, no se borra nada
+  }
+
   localStorage.removeItem(STORAGE_KEY);
   window.location.reload();
 }
+
 
 function showNotice(message, persistent = false) {
   els.loadNotice.textContent = message;
