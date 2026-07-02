@@ -1282,8 +1282,9 @@ function showScenarioModeNotice() {
   }
 
   showNotice(
-    `Escenario compartido activo: ${scenarioId}. En este paso solo estamos preparando la conexión; el guardado remoto se activará después.`,
-  );
+    `Escenario compartido activo: ${scenarioId}. Los cambios se guardan automáticamente y se sincronizan con cualquier navegador que use este mismo enlace.`,
+  ); // MODIFICADO: el mensaje refleja que Firebase ya guarda y sincroniza datos
+
 }
 
 
