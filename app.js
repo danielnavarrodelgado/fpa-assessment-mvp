@@ -354,7 +354,7 @@ function renderAssessments() {
     fragment.querySelector(".score-controls").innerHTML = LEVERS.map((lever) => scoreControl(item, lever)).join("");
     fragment.querySelector(".score-result").innerHTML = scoreResult(metrics);
     fragment.querySelector(".maturity-list").innerHTML = Object.entries(item.maturity)
-      .map(([score, text]) => `<li><strong>${score}.</strong> ${escapeHtml(text)}</li>`)
+      .map(([, text]) => `<li>${escapeHtml(text)}</li>`) // MODIFICADO: el <ol> ya numera automáticamente los niveles
       .join("");
     fragment.querySelector(".question-list").innerHTML = item.preguntasClave
       .split("\n")
