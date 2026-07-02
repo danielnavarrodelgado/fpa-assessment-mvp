@@ -128,6 +128,39 @@ h4 {
   min-width: min(100%, 520px);
 }
 
+
+.save-status {
+display: inline-flex;
+align-items: center;
+min-height: 40px;
+padding: 0 12px;
+border: 1px solid rgba(255, 255, 255, 0.28);
+border-radius: 999px;
+background: rgba(255, 255, 255, 0.08);
+color: #dfe6df;
+font-size: 0.82rem;
+font-weight: 750;
+white-space: nowrap;
+}
+
+.save-status.saving {
+border-color: rgba(255, 255, 255, 0.45);
+color: #ffffff;
+}
+
+.save-status.saved {
+border-color: rgba(134, 188, 37, 0.8);
+background: rgba(134, 188, 37, 0.18);
+color: #eaf6d8;
+}
+
+.save-status.error {
+border-color: rgba(187, 49, 40, 0.9);
+background: rgba(187, 49, 40, 0.18);
+color: #ffe5e1;
+}
+
+
 .primary-button,
 .secondary-button,
 .ghost-button {

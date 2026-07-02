@@ -109,6 +109,7 @@ function cacheElements() {
     "assessmentList",
     "heatmapTable",
     "roadmapTable",
+    "saveStatus", // NUEVO: indicador visual de guardado
     "importJsonButton",
     "exportJsonButton",
     "exportCsvButton",
@@ -609,6 +610,7 @@ async function initializeSharedScenario() {
       applyScenarioPayload(snapshot.val());
       localStorage.setItem(STORAGE_KEY, JSON.stringify(buildScenarioPayload()));
       showNotice(`Escenario compartido cargado: ${scenarioId}`);
+      updateSaveStatus("saved", "Sincronizado ✓"); // NUEVO: indica que el escenario remoto se cargó correctamente
     } else {
       await set(scenarioDatabaseRef, buildScenarioPayload());
       showNotice(`Escenario compartido creado: ${scenarioId}`);
@@ -617,6 +619,7 @@ async function initializeSharedScenario() {
     subscribeToSharedScenario();
   } catch (error) {
     showNotice("No se pudo conectar con el escenario compartido. Se mantiene el modo local.", true);
+    updateSaveStatus("saved", "Guardado ✓"); // NUEVO: indica que el escenario se creó correctamente en Firebase
     console.error(error);
   }
 }
@@ -646,19 +649,43 @@ function subscribeToSharedScenario() {
 }
 
 
+function updateSaveStatus(status, message) {
+  if (!els.saveStatus) {
+    return;
+  }
+
+  els.saveStatus.className = `save-status ${status || ""}`.trim();
+  els.saveStatus.textContent = message;
+}
+
+
+
 function persistScenario() {
   const payload = buildScenarioPayload();
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  updateSaveStatus("saving", "Guardando…"); // NUEVO: feedback inmediato
 
-  // NUEVO: si hay scenario en la URL, también guardamos en Firebase
-  if (scenarioDatabaseRef && !isApplyingRemoteScenario) {
-    set(scenarioDatabaseRef, payload).catch((error) => {
-      showNotice("No se pudo guardar el escenario compartido en Firebase.", true);
-      console.error(error);
-    });
+  // Modo local: guardado solo en este navegador
+  if (!scenarioDatabaseRef) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    updateSaveStatus("saved", "Guardado ✓"); // NUEVO: confirmación en modo local
+    return;
+  }
+
+  // Modo compartido: guardado en Firebase
+  if (!isApplyingRemoteScenario) {
+    set(scenarioDatabaseRef, payload)
+      .then(() => {
+        updateSaveStatus("saved", "Guardado ✓"); // NUEVO: confirmación tras guardar en Firebase
+      })
+      .catch((error) => {
+        updateSaveStatus("error", "Error al guardar"); // NUEVO: feedback si Firebase falla
+        showNotice("No se pudo guardar el escenario compartido en Firebase.", true);
+        console.error(error);
+      });
   }
 }
+
 
 function applyStoredScenario() {
   const raw = localStorage.getItem(STORAGE_KEY);
