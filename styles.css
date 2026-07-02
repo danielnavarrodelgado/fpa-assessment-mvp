@@ -475,9 +475,7 @@ h4 {
 }
 
 .data-table th {
-  position: sticky;
-  top: 56px;
-  z-index: 2;
+  position: static; /* MODIFICADO: evita que la cabecera se solape con las filas al hacer scroll */
   background: #f7f9f4;
   color: #323a35;
   font-size: 0.74rem;
