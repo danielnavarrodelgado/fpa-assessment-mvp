@@ -56,3 +56,16 @@ Las subcapacidades sin puntuación se muestran como `Pendiente`, sin prioridad n
 - No se han creado nuevas capacidades, subcapacidades ni iniciativas.
 - Las iniciativas sugeridas proceden del Excel y no se generan con IA.
 - La app extiende a las 20 subcapacidades la lógica de cálculo que en el Excel inicial solo estaba aplicada completamente a la primera fila de `Assessment`.
+
+
+## Uso online
+
+La herramienta está publicada en:
+
+https://danielnavarrodelgado.github.io/fpa-assessment-mvp/
+
+Para usar un escenario compartido, añadir el parámetro `scenario`:
+
+https://danielnavarrodelgado.github.io/fpa-assessment-mvp/?scenario=fpa-mvp-2026-7e45-4cbb-9d14
+
+Cualquier persona con ese enlace podrá ver y editar el mismo escenario.
