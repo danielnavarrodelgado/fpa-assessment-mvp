@@ -112,6 +112,7 @@ function cacheElements() {
     "importJsonButton",
     "exportJsonButton",
     "exportCsvButton",
+    "exportPdfButton", // NUEVO: botón de exportación PDF
     "resetButton",
     "scenarioFileInput",
   ].forEach((id) => {
@@ -127,6 +128,7 @@ function bindGlobalEvents() {
   els.scenarioFileInput.addEventListener("change", importScenario);
   els.exportJsonButton.addEventListener("click", exportScenarioJson);
   els.exportCsvButton.addEventListener("click", exportCsv);
+  els.exportPdfButton.addEventListener("click", exportPdfReport); // NUEVO: genera informe imprimible/PDF
   els.resetButton.addEventListener("click", resetScenario);
 }
 
@@ -730,6 +732,407 @@ function exportCsv() {
     });
   downloadFile("f3m_fpa_assessment_export.csv", toCsv([...summaryRows, ...roadmapRows]), "text/csv;charset=utf-8");
 }
+
+
+function exportPdfReport() {
+  const reportWindow = window.open("", "_blank");
+
+  if (!reportWindow) {
+    showNotice("El navegador ha bloqueado la ventana del informe. Permite pop-ups para exportar el PDF.", true);
+    return;
+  }
+
+  const reportHtml = buildPdfReportHtml();
+
+  reportWindow.document.open();
+  reportWindow.document.write(reportHtml);
+  reportWindow.document.close();
+
+  reportWindow.onload = () => {
+    reportWindow.focus();
+    reportWindow.print();
+  };
+}
+
+function buildPdfReportHtml() {
+  const generatedAt = new Date().toLocaleString("es-ES");
+  const scenarioLabel = scenarioId || "Modo local";
+  const metrics = state.items.map((item) => ({ item, metrics: calculate(item) }));
+  const scored = metrics.filter((entry) => !entry.metrics.isPending);
+
+  const scoreGlobal = average(scored.map((entry) => entry.metrics.scoreMedio));
+  const gapMedio = average(scored.map((entry) => entry.metrics.gap));
+  const highCount = scored.filter((entry) => entry.metrics.prioridad === "Alta").length;
+
+  return `
+    <!doctype html>
+    <html lang="es">
+      <head>
+        <meta charset="utf-8">
+        <title>Informe FP&A Assessment</title>
+        <style>
+          ${getPdfReportStyles()}
+        </style>
+      </head>
+      <body>
+        <main class="report">
+          ${buildPdfCover(generatedAt, scenarioLabel)}
+          ${buildPdfExecutiveSummary(scoreGlobal, gapMedio, scored.length, highCount)}
+          ${buildPdfSummaryTable()}
+          ${buildPdfHeatmapTable()}
+          ${buildPdfRoadmapTable()}
+        </main>
+      </body>
+    </html>
+  `;
+}
+
+
+function buildPdfCover(generatedAt, scenarioLabel) {
+  return `
+    <section class="page cover-page">
+      <p class="eyebrow">Finance Strategy · F3M</p>
+      <h1>FP&A Assessment</h1>
+      <p class="subtitle">Informe ejecutivo de madurez FP&A</p>
+
+      <div class="cover-meta">
+        <p><strong>Fecha de generación:</strong> ${escapeHtml(generatedAt)}</p>
+        <p><strong>Escenario:</strong> ${escapeHtml(scenarioLabel)}</p>
+        <p><strong>Fuente:</strong> ${escapeHtml(state.meta?.sourceFile || "-")}</p>
+        <p><strong>Objetivo de madurez:</strong> ${escapeHtml(String(state.meta?.targetMaturity || "-"))}</p>
+      </div>
+    </section>
+  `;
+}
+
+function buildPdfExecutiveSummary(scoreGlobal, gapMedio, scoredCount, highCount) {
+  return `
+    <section class="page">
+      <h2>1. Resumen ejecutivo</h2>
+      <p>
+        Este informe resume el resultado del assessment FP&A, mostrando el nivel de madurez actual,
+        los principales gaps frente al objetivo y las iniciativas sugeridas para priorizar el roadmap.
+      </p>
+
+      <div class="kpi-grid">
+        <article>
+          <span>Score global</span>
+          <strong>${escapeHtml(formatNumber(scoreGlobal))}</strong>
+        </article>
+        <article>
+          <span>Gap medio</span>
+          <strong>${escapeHtml(formatNumber(gapMedio))}</strong>
+        </article>
+        <article>
+          <span>Subcapacidades puntuadas</span>
+          <strong>${scoredCount}/${state.items.length}</strong>
+        </article>
+        <article>
+          <span>Prioridad alta</span>
+          <strong>${highCount}</strong>
+        </article>
+      </div>
+    </section>
+  `;
+}
+
+function buildPdfSummaryTable() {
+  const rows = buildSummaryRows()
+    .map((row) => `
+      <tr>
+        <td>${escapeHtml(row.Capacidad)}</td>
+        <td>${escapeHtml(row.Procesos)}</td>
+        <td>${escapeHtml(row.Tecnologia)}</td>
+        <td>${escapeHtml(row.Organizacion)}</td>
+        <td>${escapeHtml(row.ScoreMedio)}</td>
+        <td>${escapeHtml(row.Gap)}</td>
+        <td>${escapeHtml(row.Prioridad)}</td>
+      </tr>
+    `)
+    .join("");
+
+  return `
+    <section class="page">
+      <h2>2. Resumen por capacidad</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Capacidad</th>
+            <th>Procesos</th>
+            <th>Tecnología</th>
+            <th>Organización</th>
+            <th>Score medio</th>
+            <th>Gap</th>
+            <th>Prioridad</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    </section>
+  `;
+}
+
+
+function buildPdfHeatmapTable() {
+  const rows = state.items
+    .map((item) => {
+      const metrics = calculate(item);
+
+      return `
+        <tr>
+          <td>${escapeHtml(item.capacidad)}</td>
+          <td>${escapeHtml(item.subcapacidad)}</td>
+          <td>${escapeHtml(formatNumber(item.scores.procesos))}</td>
+          <td>${escapeHtml(formatNumber(item.scores.tecnologia))}</td>
+          <td>${escapeHtml(formatNumber(item.scores.organizacion))}</td>
+          <td>${escapeHtml(formatNumber(metrics.scoreMedio))}</td>
+          <td>${escapeHtml(formatNumber(metrics.gap))}</td>
+          <td>${escapeHtml(metrics.prioridad)}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  return `
+    <section class="page">
+      <h2>3. Heatmap de madurez</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Capacidad</th>
+            <th>Subcapacidad</th>
+            <th>Procesos</th>
+            <th>Tecnología</th>
+            <th>Organización</th>
+            <th>Score medio</th>
+            <th>Gap</th>
+            <th>Prioridad</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    </section>
+  `;
+}
+
+function buildPdfRoadmapTable() {
+  const rows = [...state.items]
+    .map((item) => ({ item, metrics: calculate(item) }))
+    .sort((a, b) => {
+      const priorityDiff = PRIORITY_ORDER[a.metrics.prioridad] - PRIORITY_ORDER[b.metrics.prioridad];
+      if (priorityDiff) return priorityDiff;
+      return (b.metrics.gap || 0) - (a.metrics.gap || 0);
+    })
+    .map(({ item, metrics }) => `
+      <tr>
+        <td>${escapeHtml(item.capacidad)}</td>
+        <td>${escapeHtml(item.subcapacidad)}</td>
+        <td>${escapeHtml(formatNumber(metrics.gap))}</td>
+        <td>${escapeHtml(metrics.prioridad)}</td>
+        <td>${escapeHtml(metrics.oleada)}</td>
+        <td>${escapeHtml(item.iniciativaSugerida)}</td>
+        <td>${escapeHtml(item.owner)}</td>
+        <td>${escapeHtml(item.status)}</td>
+        <td>${escapeHtml(item.comentario)}</td>
+      </tr>
+    `)
+    .join("");
+
+  return `
+    <section class="page">
+      <h2>4. Roadmap e iniciativas sugeridas</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Capacidad</th>
+            <th>Subcapacidad</th>
+            <th>Gap</th>
+            <th>Prioridad</th>
+            <th>Oleada</th>
+            <th>Iniciativa sugerida</th>
+            <th>Owner</th>
+            <th>Estado</th>
+            <th>Comentarios</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    </section>
+  `;
+}
+
+
+function getPdfReportStyles() {
+  return `
+    :root {
+      --green: #86bc25;
+      --ink: #161a18;
+      --muted: #5c665e;
+      --line: #d9dfd4;
+      --surface-muted: #f6f7f3;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #ffffff;
+      line-height: 1.4;
+    }
+
+    .report {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    .page {
+      page-break-after: always;
+      padding: 24px 0;
+    }
+
+    .page:last-child {
+      page-break-after: auto;
+    }
+
+    .cover-page {
+      min-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-bottom: 8px solid var(--green);
+    }
+
+    .eyebrow {
+      color: var(--green);
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 3rem;
+      line-height: 1.05;
+    }
+
+    h2 {
+      margin: 0 0 18px;
+      font-size: 1.5rem;
+      border-bottom: 3px solid var(--green);
+      padding-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 1.2rem;
+    }
+
+    .cover-meta {
+      margin-top: 36px;
+      padding: 20px;
+      background: var(--surface-muted);
+      border: 1px solid var(--line);
+    }
+
+    .cover-meta p {
+      margin: 8px 0;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .kpi-grid article {
+      padding: 16px;
+      border: 1px solid var(--line);
+      background: var(--surface-muted);
+    }
+
+    .kpi-grid span {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .kpi-grid strong {
+      display: block;
+      font-size: 1.8rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 0.78rem;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--line);
+      padding: 7px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--surface-muted);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+    }
+
+    @media print {
+      body {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+
+      .report {
+        max-width: none;
+        padding: 18mm;
+      }
+
+      .page {
+        page-break-after: always;
+      }
+
+      h1 {
+        font-size: 32pt;
+      }
+
+      h2 {
+        font-size: 16pt;
+      }
+
+      table {
+        font-size: 8pt;
+      }
+
+      th,
+      td {
+        padding: 4px 5px;
+      }
+    }
+  `;
+}
+
 
 function buildSummaryRows() {
   return unique(state.items.map((item) => item.capacidad)).map((capability) => {
