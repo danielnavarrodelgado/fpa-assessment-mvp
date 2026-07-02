@@ -130,6 +130,7 @@ function bindGlobalEvents() {
   els.exportCsvButton.addEventListener("click", exportCsv);
   els.exportPdfButton.addEventListener("click", exportPdfReport); // NUEVO: genera informe imprimible/PDF
   els.resetButton.addEventListener("click", resetScenario);
+  setupActiveTabObserver(); // NUEVO: marca automáticamente la pestaña activa según la sección visible
 }
 
 function normalizeItem(item) {
@@ -191,6 +192,45 @@ function getMaturityLevel(score) {
 function round2(value) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
+
+
+function setupActiveTabObserver() {
+  const tabLinks = [...document.querySelectorAll(".tabs a")]; // MODIFICADO: obtiene los links de navegación
+  const sections = tabLinks
+    .map((link) => document.querySelector(link.getAttribute("href")))
+    .filter(Boolean); // MODIFICADO: evita errores si alguna sección no existe
+
+  if (!tabLinks.length || !sections.length) {
+    return;
+  }
+
+  const setActiveTab = (sectionId) => {
+    tabLinks.forEach((link) => {
+      const isActive = link.getAttribute("href") === `#${sectionId}`;
+      link.classList.toggle("active", isActive);
+    });
+  };
+
+  const updateActiveTab = () => {
+    const scrollPosition = window.scrollY + 130; // MODIFICADO: compensa header/tabs sticky
+
+    let currentSectionId = sections[0].id;
+
+    sections.forEach((section) => {
+      if (section.offsetTop <= scrollPosition) {
+        currentSectionId = section.id;
+      }
+    });
+
+    setActiveTab(currentSectionId);
+  };
+
+  window.addEventListener("scroll", updateActiveTab, { passive: true }); // MODIFICADO: actualiza al hacer scroll
+  window.addEventListener("resize", updateActiveTab); // MODIFICADO: recalcula si cambia el tamaño de pantalla
+
+  updateActiveTab(); // MODIFICADO: estado inicial al cargar
+}
+
 
 function renderAll() {
   if (!state.items.length) return;

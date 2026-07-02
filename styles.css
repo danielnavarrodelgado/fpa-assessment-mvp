@@ -185,6 +185,15 @@ h4 {
   text-decoration: none;
 }
 
+
+.tabs a.active {
+background: var(--green); /* NUEVO: resalta la pestaña activa */
+border-color: var(--green); /* NUEVO: mantiene coherencia visual con el color activo */
+color: #10140e; /* NUEVO: mejora contraste sobre fondo verde */
+box-shadow: 0 6px 14px rgba(134, 188, 37, 0.22); /* NUEVO: da sensación de estado seleccionado */
+}
+
+
 .section-block {
   padding-top: 28px;
 }
