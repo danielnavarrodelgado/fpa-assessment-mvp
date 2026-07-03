@@ -626,41 +626,41 @@ border: 1px solid transparent;
 white-space: nowrap;
 }
 
-/* NUEVO: colores explícitos para la leyenda del heatmap */
+/* MODIFICADO: la leyenda usa exactamente los mismos colores que las celdas reales del heatmap */
 .legend-item.heat-1 {
-background: #fde7e3;
-color: var(--red);
-border-color: #f4b8b0;
+background: #f9d2cc;
+color: #7d1f19;
+border-color: #f9d2cc;
 }
 
 .legend-item.heat-2 {
-background: #fff0d3;
-color: var(--amber);
-border-color: #f0cf8a;
+background: #ffe5ba;
+color: #7a4700;
+border-color: #ffe5ba;
 }
 
 .legend-item.heat-3 {
-background: #fff8d8;
-color: #7a5b00;
-border-color: #eadc8a;
+background: #f4efb5;
+color: #504b00;
+border-color: #f4efb5;
 }
 
 .legend-item.heat-4 {
-background: #e8f4df;
-color: var(--green-dark);
-border-color: #bedfa6;
+background: #d9edc3;
+color: #315d11;
+border-color: #d9edc3;
 }
 
 .legend-item.heat-5 {
-background: #dff3e6;
-color: #17683a;
-border-color: #a8d9b8;
+background: #bfe1ce;
+color: #0f5132;
+border-color: #bfe1ce;
 }
 
 .legend-item.heat-blank {
-background: #ecefed;
-color: var(--neutral);
-border-color: #d4d9d5;
+background: #eef0ed;
+color: #737a74;
+border-color: #eef0ed;
 }
 
 
