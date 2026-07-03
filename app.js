@@ -427,25 +427,52 @@ function renderAssessments() {
     els.assessmentList.appendChild(fragment);
   });
 
-  els.assessmentList.querySelectorAll(".score-select").forEach((select) => {
-    select.addEventListener("change", handleScoreChange);
+  els.assessmentList.querySelectorAll(".score-pill, .score-clear-button").forEach((button) => {
+    button.addEventListener("click", handleScoreButtonClick);
   });
 }
 
 function scoreControl(item, lever) {
   const current = item.scores[lever.key];
-  const options = [`<option value="">Sin puntuar</option>`]
-    .concat([1, 2, 3, 4, 5].map((value) => `<option value="${value}" ${current === value ? "selected" : ""}>${value}</option>`))
+
+  const scoreButtons = [1, 2, 3, 4, 5]
+    .map((value) => {
+      const isSelected = current === value;
+
+      return `
+        <button
+          class="score-pill ${isSelected ? "selected" : ""}"
+          type="button"
+          data-id="${escapeAttr(item.id)}"
+          data-lever="${lever.key}"
+          data-score="${value}"
+          aria-pressed="${isSelected}"
+        >
+          ${value}
+        </button>
+      `;
+    })
     .join("");
+
   return `
-    <label class="score-field">
+    <div class="score-field">
       <span>${escapeHtml(lever.label)}</span>
-      <select class="score-select" data-id="${escapeAttr(item.id)}" data-lever="${lever.key}">
-        ${options}
-      </select>
-    </label>
+      <div class="score-pill-group" role="group" aria-label="Score ${escapeAttr(lever.label)}">
+        ${scoreButtons}
+      </div>
+      <button
+        class="score-clear-button"
+        type="button"
+        data-id="${escapeAttr(item.id)}"
+        data-lever="${lever.key}"
+        data-score=""
+      >
+        Sin puntuar
+      </button>
+    </div>
   `;
 }
+
 
 function scoreResult(metrics) {
   if (metrics.isPending) {
@@ -470,6 +497,21 @@ function handleScoreChange(event) {
   persistScenario();
   renderAll();
 }
+
+
+function handleScoreButtonClick(event) {
+  const button = event.currentTarget; // NUEVO: botón pulsado
+  const item = state.items.find((entry) => entry.id === button.dataset.id);
+
+  if (!item) {
+    return;
+  }
+
+  item.scores[button.dataset.lever] = toScore(button.dataset.score); // NUEVO: actualiza score desde botón/pill
+  persistScenario();
+  renderAll();
+}
+
 
 function renderHeatmap() {
   const rows = getVisibleItems().map((item) => {
