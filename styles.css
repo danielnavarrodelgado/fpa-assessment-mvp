@@ -270,6 +270,45 @@ box-shadow: 0 6px 14px rgba(134, 188, 37, 0.22); /* NUEVO: da sensación de esta
   color: #5b4310;
 }
 
+
+.loading-state {
+display: flex;
+align-items: center;
+gap: 18px;
+margin: 18px 0 8px;
+padding: 18px 20px;
+border: 1px solid var(--line);
+border-radius: var(--radius);
+background: var(--surface);
+box-shadow: var(--shadow);
+}
+
+.loading-spinner {
+width: 34px;
+height: 34px;
+border: 4px solid #e8ece3;
+border-top-color: var(--green);
+border-radius: 50%;
+animation: spin 0.9s linear infinite;
+flex: 0 0 auto;
+}
+
+.loading-state h2 {
+margin-bottom: 4px;
+font-size: 1.15rem;
+}
+
+@keyframes spin {
+to {
+transform: rotate(360deg);
+}
+}
+
+.loading-state[hidden] {
+display: none;
+}
+
+
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

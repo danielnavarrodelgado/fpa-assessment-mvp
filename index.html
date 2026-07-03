@@ -30,6 +30,17 @@
     <main class="app-shell">
       <section class="notice" id="loadNotice" hidden></section>
 
+      
+<section class="loading-state" id="initialLoadingState" aria-live="polite"> <!-- NUEVO: estado visual mientras carga la app -->
+  <div class="loading-spinner" aria-hidden="true"></div>
+  <div>
+    <p class="eyebrow">Cargando assessment</p>
+    <h2>Preparando datos y escenario compartido…</h2>
+    <p class="small-note">Esto puede tardar unos segundos si se está sincronizando con Firebase.</p>
+  </div>
+</section>
+
+
       <nav class="tabs" aria-label="Secciones del assessment">
         <a href="#dashboard">Dashboard</a>
         <a href="#assessment">Assessment</a>

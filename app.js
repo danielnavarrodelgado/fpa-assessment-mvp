@@ -67,22 +67,30 @@ const els = {};
 
 document.addEventListener("DOMContentLoaded", init);
 
+
 async function init() {
   cacheElements();
   bindGlobalEvents();
+  setInitialLoading(true); // NUEVO: muestra estado de carga mientras se inicializa la app
   showScenarioModeNotice();
 
   try {
     const response = await fetch(DATA_URL, { cache: "no-store" });
+
     if (!response.ok) {
       throw new Error(`No se pudo cargar ${DATA_URL}`);
     }
+
     const data = await response.json();
+
     state.meta = data.meta;
     state.items = data.subcapacities.map(normalizeItem);
-    applyStoredScenario();
 
-    await initializeSharedScenario(); // NUEVO: carga o crea el escenario compartido en Firebase
+    if (!scenarioId) {
+      applyStoredScenario();
+    }
+
+    await initializeSharedScenario();
 
     populateCapacityFilter();
     renderAll();
@@ -92,12 +100,16 @@ async function init() {
       true,
     );
     console.error(error);
+  } finally {
+    setInitialLoading(false); // NUEVO: oculta el estado de carga al terminar, incluso si hay error
   }
 }
+
 
 function cacheElements() {
   [
     "loadNotice",
+    "initialLoadingState", // NUEVO: estado visual de carga inicial
     "sourceNote",
     "kpiGrid",
     "priorityBars",
@@ -230,6 +242,15 @@ function setupActiveTabObserver() {
   window.addEventListener("resize", updateActiveTab); // MODIFICADO: recalcula si cambia el tamaño de pantalla
 
   updateActiveTab(); // MODIFICADO: estado inicial al cargar
+}
+
+
+function setInitialLoading(isLoading) {
+  if (!els.initialLoadingState) {
+    return;
+  }
+
+  els.initialLoadingState.hidden = !isLoading;
 }
 
 
