@@ -991,20 +991,24 @@ grid-template-columns: 1fr;
 
 
 
-.radar-panel {
-margin-top: 16px;
+.summary-radar-block {
+margin-top: 22px; /* NUEVO: separa el radar de la tabla */
+padding-top: 18px; /* NUEVO: da aire visual dentro del mismo panel */
+border-top: 1px solid var(--line); /* NUEVO: separador sutil entre tabla y radar */
 }
 
+.radar-heading {
+margin-bottom: 8px;
+}
 
 .radar-chart-wrap {
 position: relative;
-height: 560px; /* MODIFICADO: reduce altura para que quepa mejor en pantalla */
-min-height: 0; /* MODIFICADO: evita que el gráfico fuerce demasiada altura */
+height: 520px; /* MODIFICADO: radar más grande */
+min-height: 0;
 width: 100%;
-max-width: 980px; /* NUEVO: limita el ancho para que no se expanda demasiado */
-margin: 0 auto; /* NUEVO: centra el radar dentro del panel */
+max-width: 920px; /* MODIFICADO: permite más tamaño sin ocupar toda la pantalla */
+margin: 0 auto;
 }
-
 
 #capabilityRadarChart {
 display: block;
@@ -1014,7 +1018,7 @@ height: 100% !important;
 
 @media (max-width: 720px) {
 .radar-chart-wrap {
-height: 440px;
+height: 400px;
 max-width: 100%;
 }
 }
