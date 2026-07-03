@@ -504,7 +504,11 @@ function renderHeatmap() {
 }
 
 function renderRoadmap() {
-  const rows = [...state.items]
+  
+  const roadmapItems = getVisibleItems(); // MODIFICADO: el roadmap ahora respeta los filtros activos
+
+  const rows = roadmapItems
+
     .map((item) => ({ item, metrics: calculate(item) }))
     .sort((a, b) => {
       const priorityDiff = PRIORITY_ORDER[a.metrics.prioridad] - PRIORITY_ORDER[b.metrics.prioridad];
@@ -539,7 +543,11 @@ function renderRoadmap() {
         <th>Comentarios</th>
       </tr>
     </thead>
-    <tbody>${rows.join("")}</tbody>
+    
+    <tbody>
+      ${rows.join("") || `<tr><td colspan="9">No hay iniciativas para los filtros actuales.</td></tr>`}
+    </tbody>
+
   `;
 
   els.roadmapTable.querySelectorAll(".roadmap-owner").forEach((input) => {
