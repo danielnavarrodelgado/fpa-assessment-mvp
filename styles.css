@@ -551,6 +551,80 @@ box-shadow: 0 6px 14px rgba(134, 188, 37, 0.22); /* NUEVO: da sensación de esta
   font-weight: 850;
 }
 
+
+.heatmap-legend {
+margin-bottom: 14px; /* NUEVO: separa la leyenda de la tabla */
+padding: 14px 16px; /* NUEVO: hace que la leyenda respire visualmente */
+}
+
+.legend-heading {
+display: flex;
+align-items: baseline;
+justify-content: space-between;
+gap: 14px;
+margin-bottom: 12px;
+}
+
+.legend-heading strong {
+font-size: 0.92rem;
+}
+
+.legend-items {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+}
+
+.legend-item {
+display: inline-flex;
+align-items: center;
+min-height: 28px;
+padding: 4px 10px;
+border-radius: 999px;
+font-size: 0.78rem;
+font-weight: 850;
+border: 1px solid transparent;
+white-space: nowrap;
+}
+
+/* NUEVO: colores explícitos para la leyenda del heatmap */
+.legend-item.heat-1 {
+background: #fde7e3;
+color: var(--red);
+border-color: #f4b8b0;
+}
+
+.legend-item.heat-2 {
+background: #fff0d3;
+color: var(--amber);
+border-color: #f0cf8a;
+}
+
+.legend-item.heat-3 {
+background: #fff8d8;
+color: #7a5b00;
+border-color: #eadc8a;
+}
+
+.legend-item.heat-4 {
+background: #e8f4df;
+color: var(--green-dark);
+border-color: #bedfa6;
+}
+
+.legend-item.heat-5 {
+background: #dff3e6;
+color: #17683a;
+border-color: #a8d9b8;
+}
+
+.legend-item.heat-blank {
+background: #ecefed;
+color: var(--neutral);
+border-color: #d4d9d5;
+}
+
+
 .roadmap-table {
   min-width: 1100px;
 }

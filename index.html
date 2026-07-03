@@ -106,18 +106,36 @@
         <div class="assessment-list" id="assessmentList"></div>
       </section>
 
-      <section id="heatmap" class="section-block">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Vista visual</p>
-            <h2>Heatmap de madurez</h2>
-          </div>
-          <p class="small-note">Los colores bajos señalan menor madurez; filas pendientes quedan neutrales.</p>
-        </div>
-        <div class="table-wrap panel">
-          <table class="data-table heatmap-table" id="heatmapTable"></table>
-        </div>
-      </section>
+
+<section id="heatmap" class="section-block">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Vista visual</p>
+      <h2>Heatmap de madurez</h2>
+    </div>
+    <p class="small-note">Los colores bajos señalan menor madurez; filas pendientes quedan neutrales.</p>
+  </div>
+
+  <div class="heatmap-legend panel"> <!-- NUEVO: leyenda visual del heatmap -->
+    <div class="legend-heading">
+      <strong>Leyenda de madurez</strong>
+      <span class="small-note">Escala de 1 a 5 usada en las celdas del heatmap</span>
+    </div>
+    <div class="legend-items">
+      <span class="legend-item heat-1">1 · Inicial</span>
+      <span class="legend-item heat-2">2 · Estructurado</span>
+      <span class="legend-item heat-3">3 · Estandarizado</span>
+      <span class="legend-item heat-4">4 · Optimizado</span>
+      <span class="legend-item heat-5">5 · Avanzado</span>
+      <span class="legend-item heat-blank">- · Pendiente</span>
+    </div>
+  </div>
+
+  <div class="table-wrap panel">
+    <table class="data-table heatmap-table" id="heatmapTable"></table>
+  </div>
+</section>
+
 
       <section id="roadmap" class="section-block">
         <div class="section-heading">
