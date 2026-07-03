@@ -826,3 +826,165 @@ border-color: #d4d9d5;
     flex: 1 1 150px;
   }
 }
+
+
+.criteria-inline-action {
+display: flex; /* NUEVO: pone texto y botón en la misma línea cuando hay espacio */
+align-items: center;
+flex-wrap: wrap; /* NUEVO: permite bajar el botón en pantallas pequeñas */
+gap: 10px;
+margin-top: 4px;
+}
+
+.criteria-inline-action .small-note {
+margin: 0;
+}
+
+.scoring-criteria-button {
+min-height: 32px;
+margin-top: 0; /* MODIFICADO: evita línea extra visual */
+padding: 0 12px;
+}
+
+
+.modal-backdrop {
+position: fixed;
+inset: 0;
+z-index: 100;
+display: grid;
+place-items: center;
+padding: 24px;
+background: rgba(18, 22, 20, 0.62);
+}
+
+.modal-backdrop[hidden] {
+display: none;
+}
+
+.criteria-modal {
+width: min(860px, 100%);
+max-height: min(82vh, 760px);
+overflow: auto;
+border: 1px solid var(--line);
+border-radius: 12px;
+background: var(--surface);
+box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+}
+
+.criteria-modal-header {
+display: flex;
+align-items: flex-start;
+justify-content: space-between;
+gap: 18px;
+padding: 22px 24px 16px;
+border-bottom: 1px solid var(--line);
+}
+
+.criteria-modal-header h2 {
+margin: 0;
+}
+
+.modal-close-button {
+width: 36px;
+height: 36px;
+border-radius: 999px;
+background: var(--surface-muted);
+color: var(--ink);
+font-size: 1.4rem;
+font-weight: 800;
+line-height: 1;
+}
+
+.modal-close-button:hover {
+background: #e6ebdf;
+}
+
+.criteria-tabs {
+display: flex;
+gap: 8px;
+padding: 18px 24px 10px; /* MODIFICADO: añade espacio arriba y abajo para que no se corte el pill */
+border-bottom: 1px solid var(--line);
+overflow: visible; /* NUEVO: evita cortes visuales del borde redondeado */
+}
+
+.criteria-tab {
+min-height: 36px;
+padding: 0 14px;
+border: 1px solid transparent;
+border-radius: 999px; /* MODIFICADO: pill completo, evita semicírculo cortado */
+background: transparent;
+color: var(--muted); /* CORREGIDO */
+font-weight: 800;
+}
+
+.criteria-tab.active {
+background: var(--green);
+border-color: var(--green);
+color: #10140e;
+box-shadow: 0 6px 14px rgba(134, 188, 37, 0.22); /* NUEVO: refuerza estado activo */
+}
+
+.criteria-panel {
+display: none;
+padding: 22px 24px 26px;
+}
+
+.criteria-panel.active {
+display: block;
+}
+
+.criteria-panel h3 {
+margin-bottom: 14px;
+font-size: 1.1rem;
+}
+
+.criteria-levels,
+.criteria-checklist {
+list-style: none; /* MODIFICADO: elimina numeración automática */
+margin: 0;
+padding-left: 0;
+
+}
+
+.criteria-levels li,
+.criteria-checklist li {
+margin-bottom: 9px;
+}
+
+.criteria-checklist {
+display: grid;
+grid-template-columns: repeat(2, minmax(0, 1fr));
+gap: 8px 18px;
+margin-top: 10px;
+}
+
+.criteria-checklist li {
+margin-bottom: 0;
+}
+
+@media (max-width: 720px) {
+.modal-backdrop {
+padding: 12px;
+}
+
+.criteria-modal {
+max-height: 88vh;
+}
+
+.criteria-modal-header {
+padding: 18px;
+}
+
+.criteria-tabs {
+flex-wrap: wrap;
+padding: 14px 18px 0;
+}
+
+.criteria-panel {
+padding: 18px;
+}
+
+.criteria-checklist {
+grid-template-columns: 1fr;
+}
+}

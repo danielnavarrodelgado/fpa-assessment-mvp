@@ -185,13 +185,106 @@
               <ul class="question-list"></ul>
               <h4>Evidencias</h4>
               <p class="evidence-text"></p>
-              <h4>Iniciativa sugerida</h4>
+              <h4>Criterios F3M de scoring</h4>
+                <div class="criteria-inline-action">
+                  <span class="small-note">
+                    Consulta la guía de evaluación para puntuar Procesos, Tecnología y Organización.
+                  </span>
+                  <button class="secondary-button scoring-criteria-button" type="button">
+                    Ver criterios F3M
+                  </button>
+                </div>
               <p class="initiative-text"></p>
             </div>
           </div>
         </details>
       </article>
     </template>
+
+
+    <div class="modal-backdrop" id="scoringCriteriaModal" role="dialog" aria-modal="true" aria-labelledby="scoringCriteriaTitle" hidden>
+  <div class="criteria-modal" role="document">
+    <div class="criteria-modal-header">
+      <div>
+        <p class="eyebrow">Guía de evaluación</p>
+        <h2 id="scoringCriteriaTitle">Criterios F3M de scoring</h2>
+      </div>
+      <button class="modal-close-button" id="closeScoringCriteriaModalButton" type="button" aria-label="Cerrar criterios de scoring">
+        ×
+      </button>
+    </div>
+
+    <div class="criteria-tabs" role="tablist" aria-label="Criterios por palanca">
+      <button class="criteria-tab active" type="button" role="tab" data-criteria-tab="procesos" aria-selected="true">
+        Procesos
+      </button>
+      <button class="criteria-tab" type="button" role="tab" data-criteria-tab="tecnologia" aria-selected="false">
+        Tecnología
+      </button>
+      <button class="criteria-tab" type="button" role="tab" data-criteria-tab="organizacion" aria-selected="false">
+        Organización
+      </button>
+    </div>
+
+    <div class="criteria-panel active" data-criteria-panel="procesos">
+      <h3>Procesos</h3>
+      <ol class="criteria-levels">
+        <li><strong>Nivel 1 - Inicial:</strong> No existe proceso formal o es ad hoc</li>
+        <li><strong>Nivel 2 - Estructurado:</strong> Proceso parcial o inconsistente</li>
+        <li><strong>Nivel 3 - Estandarizado:</strong> Proceso homogéneo y documentado</li>
+        <li><strong>Nivel 4 - Optimizado:</strong> Proceso medido y eficiente</li>
+        <li><strong>Nivel 5 - Avanzado:</strong> Proceso integrado y orientado a decisiones</li>
+      </ol>
+
+      <h4>Checklist</h4>
+      <ul class="criteria-checklist">
+        <li>Existe proceso formal</li>
+        <li>Es consistente</li>
+        <li>Está medido</li>
+        <li>Impacta decisiones</li>
+      </ul>
+    </div>
+
+    <div class="criteria-panel" data-criteria-panel="tecnologia">
+      <h3>Tecnología</h3>
+      <ol class="criteria-levels">
+        <li><strong>Nivel 1 - Inicial:</strong> Excel/manual</li>
+        <li><strong>Nivel 2 - Estructurado:</strong> Herramientas parciales</li>
+        <li><strong>Nivel 3 - Estandarizado:</strong> Herramienta corporativa</li>
+        <li><strong>Nivel 4 - Optimizado:</strong> Integración y automatización</li>
+        <li><strong>Nivel 5 - Avanzado:</strong> Predictivo / IA</li>
+      </ol>
+
+      <h4>Checklist</h4>
+      <ul class="criteria-checklist">
+        <li>Herramienta estructurada</li>
+        <li>Integración</li>
+        <li>Automatización</li>
+        <li>Soporte a decisiones</li>
+      </ul>
+    </div>
+
+    <div class="criteria-panel" data-criteria-panel="organizacion">
+      <h3>Organización</h3>
+      <ol class="criteria-levels">
+        <li><strong>Nivel 1 - Inicial:</strong> Roles no claros</li>
+        <li><strong>Nivel 2 - Estructurado:</strong> Roles parciales</li>
+        <li><strong>Nivel 3 - Estandarizado:</strong> Roles definidos</li>
+        <li><strong>Nivel 4 - Optimizado:</strong> Business partnering</li>
+        <li><strong>Nivel 5 - Avanzado:</strong> Influencia estratégica</li>
+      </ol>
+
+      <h4>Checklist</h4>
+      <ul class="criteria-checklist">
+        <li>Roles claros</li>
+        <li>Accountability</li>
+        <li>Participación en decisiones</li>
+        <li>Influencia estratégica</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
 
     <script type="module" src="app.js"></script>
   </body>

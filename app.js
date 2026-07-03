@@ -121,6 +121,8 @@ function cacheElements() {
     "assessmentList",
     "heatmapTable",
     "roadmapTable",
+    "scoringCriteriaModal", // NUEVO: modal de criterios F3M
+    "closeScoringCriteriaModalButton", // NUEVO: botón cerrar modal
     "saveStatus", // NUEVO: indicador visual de guardado
     "importJsonButton",
     "exportJsonButton",
@@ -144,6 +146,7 @@ function bindGlobalEvents() {
   els.exportPdfButton.addEventListener("click", exportPdfReport); // NUEVO: genera informe imprimible/PDF
   els.resetButton.addEventListener("click", resetScenario);
   setupActiveTabObserver(); // NUEVO: marca automáticamente la pestaña activa según la sección visible
+  setupScoringCriteriaModal(); // NUEVO: configura modal de criterios F3M
 }
 
 function normalizeItem(item) {
@@ -251,6 +254,65 @@ function setInitialLoading(isLoading) {
   }
 
   els.initialLoadingState.hidden = !isLoading;
+}
+
+
+function setupScoringCriteriaModal() {
+  if (!els.scoringCriteriaModal) {
+    return;
+  }
+
+  els.assessmentList.addEventListener("click", (event) => {
+    const button = event.target.closest(".scoring-criteria-button");
+
+    if (!button) {
+      return;
+    }
+
+    openScoringCriteriaModal();
+  });
+
+  els.closeScoringCriteriaModalButton?.addEventListener("click", closeScoringCriteriaModal);
+
+  els.scoringCriteriaModal.addEventListener("click", (event) => {
+    if (event.target === els.scoringCriteriaModal) {
+      closeScoringCriteriaModal();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !els.scoringCriteriaModal.hidden) {
+      closeScoringCriteriaModal();
+    }
+  });
+
+  els.scoringCriteriaModal.querySelectorAll(".criteria-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      activateScoringCriteriaTab(tab.dataset.criteriaTab);
+    });
+  });
+}
+
+function openScoringCriteriaModal() {
+  els.scoringCriteriaModal.hidden = false;
+  activateScoringCriteriaTab("procesos");
+  els.closeScoringCriteriaModalButton?.focus();
+}
+
+function closeScoringCriteriaModal() {
+  els.scoringCriteriaModal.hidden = true;
+}
+
+function activateScoringCriteriaTab(tabKey) {
+  els.scoringCriteriaModal.querySelectorAll(".criteria-tab").forEach((tab) => {
+    const isActive = tab.dataset.criteriaTab === tabKey;
+    tab.classList.toggle("active", isActive);
+    tab.setAttribute("aria-selected", String(isActive));
+  });
+
+  els.scoringCriteriaModal.querySelectorAll(".criteria-panel").forEach((panel) => {
+    panel.classList.toggle("active", panel.dataset.criteriaPanel === tabKey);
+  });
 }
 
 
@@ -423,7 +485,6 @@ function renderAssessments() {
       .map((question) => `<li>${escapeHtml(question)}</li>`)
       .join("");
     fragment.querySelector(".evidence-text").textContent = item.evidencias;
-    fragment.querySelector(".initiative-text").textContent = item.iniciativaSugerida;
     els.assessmentList.appendChild(fragment);
   });
 
