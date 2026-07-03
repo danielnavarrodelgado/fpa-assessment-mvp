@@ -59,6 +59,7 @@ const state = {
   items: [],
 };
 
+let capabilityRadarChart = null; // NUEVO: instancia del gráfico radar
 
 let isApplyingRemoteScenario = false; // NUEVO: evita guardar de vuelta mientras estamos cargando datos remotos
 
@@ -115,6 +116,7 @@ function cacheElements() {
     "priorityBars",
     "leverBars",
     "summaryTable",
+    "capabilityRadarChart", // NUEVO: canvas del radar por capacidad
     "capacityFilter",
     "priorityFilter",
     "searchInput",
@@ -373,6 +375,7 @@ function renderDashboard() {
   renderPriorityBars(metrics);
   renderLeverBars();
   renderSummaryTable();
+  renderCapabilityRadar(); // NUEVO: actualiza radar al recalcular dashboard
 }
 
 function kpiCard(label, value, note) {
@@ -457,6 +460,179 @@ function renderSummaryTable() {
     <tbody>${rows.join("")}</tbody>
   `;
 }
+
+
+function renderCapabilityRadar() {
+  if (!els.capabilityRadarChart || typeof Chart === "undefined") {
+    return;
+  }
+
+  const radarData = buildCapabilityRadarData();
+
+  const chartData = {
+    labels: radarData.displayLabels,
+    datasets: [
+      {
+        label: "Procesos",
+        data: radarData.procesos,
+        fill: true,
+        backgroundColor: "rgba(134, 188, 37, 0.24)",
+        borderColor: "#86bc25",
+        pointBackgroundColor: "#86bc25",
+        pointBorderColor: "#ffffff",
+        pointHoverBackgroundColor: "#ffffff",
+        pointHoverBorderColor: "#86bc25",
+      },
+      {
+        label: "Tecnología",
+        data: radarData.tecnologia,
+        fill: true,
+        
+        backgroundColor: "rgba(200, 121, 0, 0.20)", // MODIFICADO: ámbar/naranja más diferenciado
+        borderColor: "#c87900", // MODIFICADO
+        pointBackgroundColor: "#c87900", // MODIFICADO
+        pointBorderColor: "#ffffff",
+        pointHoverBackgroundColor: "#ffffff",
+        pointHoverBorderColor: "#c87900", // MODIFICA
+
+      },
+      {
+        label: "Organización",
+        data: radarData.organizacion,
+        fill: true,
+        backgroundColor: "rgba(37, 94, 145, 0.18)",
+        borderColor: "#255e91",
+        pointBackgroundColor: "#255e91",
+        pointBorderColor: "#ffffff",
+        pointHoverBackgroundColor: "#ffffff",
+        pointHoverBorderColor: "#255e91",
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    
+    layout: {
+      padding: 0, // NUEVO: reduce el espacio interno del gráfico para aprovechar mejor el panel
+    },
+
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: {
+          boxWidth: 14,
+          boxHeight: 14,
+          usePointStyle: true,
+          font: {
+            size: 12,
+            weight: "700",
+          },
+        },
+      },
+      tooltip: {
+        callbacks: {
+          title: (items) => {
+            const index = items[0]?.dataIndex ?? 0;
+            return radarData.originalLabels[index] || "";
+          },
+          label: (context) => `${context.dataset.label}: ${formatNumber(context.parsed.r)}`,
+        },
+      },
+    },
+    scales: {
+      r: {
+        min: 0,
+        max: 5,
+        ticks: {
+          stepSize: 1,
+          backdropColor: "transparent",
+          color: "#5c665e",
+        },
+        pointLabels: {
+          color: "#323a35",
+          font: {
+            size: 12,
+            weight: "700",
+          },
+        },
+        grid: {
+          color: "#d9dfd4",
+        },
+        angleLines: {
+          color: "#d9dfd4",
+        },
+      },
+    },
+    elements: {
+      line: {
+        borderWidth: 2.5,
+      },
+      point: {
+        radius: 3.5,
+        hoverRadius: 6,
+      },
+    },
+  };
+
+  if (capabilityRadarChart) {
+    capabilityRadarChart.data = chartData;
+    capabilityRadarChart.options = chartOptions;
+    capabilityRadarChart.update();
+    return;
+  }
+
+  capabilityRadarChart = new Chart(els.capabilityRadarChart, {
+    type: "radar",
+    data: chartData,
+    options: chartOptions,
+  });
+}
+
+function buildCapabilityRadarData() {
+  const rows = buildSummaryRows();
+
+  return {
+    originalLabels: rows.map((row) => row.Capacidad),
+    displayLabels: rows.map((row) => wrapRadarLabel(row.Capacidad)),
+    procesos: rows.map((row) => toRadarNumber(row.Procesos)),
+    tecnologia: rows.map((row) => toRadarNumber(row.Tecnologia)),
+    organizacion: rows.map((row) => toRadarNumber(row.Organizacion)),
+  };
+}
+
+function toRadarNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function wrapRadarLabel(label) {
+  const words = String(label).split(" ");
+  const lines = [];
+  let currentLine = "";
+
+  words.forEach((word) => {
+    const nextLine = currentLine ? `${currentLine} ${word}` : word;
+
+    if (nextLine.length > 18) {
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      currentLine = word;
+    } else {
+      currentLine = nextLine;
+    }
+  });
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines;
+}
+
+
 
 function renderAssessments() {
   const items = getVisibleItems();

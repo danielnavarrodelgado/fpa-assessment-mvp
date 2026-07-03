@@ -988,3 +988,33 @@ padding: 18px;
 grid-template-columns: 1fr;
 }
 }
+
+
+
+.radar-panel {
+margin-top: 16px;
+}
+
+
+.radar-chart-wrap {
+position: relative;
+height: 560px; /* MODIFICADO: reduce altura para que quepa mejor en pantalla */
+min-height: 0; /* MODIFICADO: evita que el gráfico fuerce demasiada altura */
+width: 100%;
+max-width: 980px; /* NUEVO: limita el ancho para que no se expanda demasiado */
+margin: 0 auto; /* NUEVO: centra el radar dentro del panel */
+}
+
+
+#capabilityRadarChart {
+display: block;
+width: 100% !important;
+height: 100% !important;
+}
+
+@media (max-width: 720px) {
+.radar-chart-wrap {
+height: 440px;
+max-width: 100%;
+}
+}
