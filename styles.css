@@ -596,6 +596,53 @@ margin-bottom: 14px; /* NUEVO: separa la leyenda de la tabla */
 padding: 14px 16px; /* NUEVO: hace que la leyenda respire visualmente */
 }
 
+
+.heatmap-capability-row td:not(.heat-cell) {
+background: #f7f9f4; /* MODIFICADO: solo aplica fondo neutro a columnas de texto */
+font-weight: 850;
+}
+
+.heatmap-capability-row td:first-child {
+min-width: 220px;
+}
+
+.heatmap-detail-row td:not(.heat-cell) {
+background: #ffffff; /* MODIFICADO: no pisa los colores de las celdas de score/gap */
+}
+
+.heatmap-detail-row.is-hidden {
+display: none;
+}
+
+.heatmap-detail-capability {
+color: var(--muted);
+font-size: 0.82rem;
+}
+
+.heatmap-toggle {
+min-height: 30px;
+padding: 0 10px;
+border: 1px solid var(--line);
+border-radius: 999px;
+background: var(--surface);
+color: var(--green-dark);
+font-size: 0.8rem;
+font-weight: 850;
+white-space: nowrap;
+}
+
+.heatmap-toggle:hover {
+border-color: var(--green);
+background: #f3f8ea;
+}
+
+.heatmap-toggle[aria-expanded="true"] {
+background: var(--green);
+border-color: var(--green);
+color: #10140e;
+}
+
+
 .legend-heading {
 display: flex;
 align-items: baseline;

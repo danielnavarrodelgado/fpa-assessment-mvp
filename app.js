@@ -709,25 +709,60 @@ function handleScoreChange(event) {
 }
 
 function renderHeatmap() {
-  const rows = getVisibleItems().map((item) => {
-    const metrics = calculate(item);
-    return `
-      <tr>
-        <td>${escapeHtml(item.capacidad)}</td>
-        <td>${escapeHtml(item.subcapacidad)}</td>
-        ${LEVERS.map((lever) => heatScoreCell(item.scores[lever.key])).join("")}
-        ${heatScoreCell(metrics.scoreMedio)}
-        <td class="heat-cell ${gapClass(metrics.gap)}">${formatNumber(metrics.gap)}</td>
-        <td>${priorityBadge(metrics.prioridad)}</td>
-      </tr>
-    `;
-  });
+  const visibleItems = getVisibleItems();
+  const capabilityRows = buildHeatmapCapabilityRows(visibleItems);
+
+  const rows = capabilityRows
+    .map((entry) => {
+      const detailRows = entry.items
+        .map((item) => {
+          const metrics = calculate(item);
+
+          return `
+            <tr class="heatmap-detail-row is-hidden" data-capability-detail="${escapeAttr(entry.capability)}">
+              <td class="heatmap-detail-capability">${escapeHtml(item.capacidad)}</td>
+              <td>${escapeHtml(item.subcapacidad)}</td>
+              ${LEVERS.map((lever) => heatScoreCell(item.scores[lever.key])).join("")}
+              ${heatScoreCell(metrics.scoreMedio)}
+              <td class="heat-cell ${gapClass(metrics.gap)}">${formatNumber(metrics.gap)}</td>
+              <td>${priorityBadge(metrics.prioridad)}</td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      return `
+        <tr class="heatmap-capability-row">
+          <td>
+            <strong>${escapeHtml(entry.capability)}</strong>
+          </td>
+          <td>
+            <button
+              class="heatmap-toggle"
+              type="button"
+              data-capability-toggle="${escapeAttr(entry.capability)}"
+              aria-expanded="false"
+            >
+              Ver subcapacidades (${entry.items.length})
+            </button>
+          </td>
+          ${heatScoreCell(entry.procesos)}
+          ${heatScoreCell(entry.tecnologia)}
+          ${heatScoreCell(entry.organizacion)}
+          ${heatScoreCell(entry.scoreMedio)}
+          <td class="heat-cell ${gapClass(entry.gap)}">${formatNumber(entry.gap)}</td>
+          <td>${priorityBadge(entry.prioridad)}</td>
+        </tr>
+        ${detailRows}
+      `;
+    })
+    .join("");
 
   els.heatmapTable.innerHTML = `
     <thead>
       <tr>
         <th>Capacidad</th>
-        <th>Subcapacidad</th>
+        <th>Subcapacidades</th>
         <th class="number">Procesos</th>
         <th class="number">Tecnología</th>
         <th class="number">Organización</th>
@@ -736,9 +771,77 @@ function renderHeatmap() {
         <th>Prioridad</th>
       </tr>
     </thead>
-    <tbody>${rows.join("") || `<tr><td colspan="8">No hay datos para los filtros actuales.</td></tr>`}</tbody>
+    <tbody>
+      ${rows || `<tr><td colspan="8">No hay datos para los filtros actuales.</td></tr>`}
+    </tbody>
   `;
+
+  els.heatmapTable.querySelectorAll(".heatmap-toggle").forEach((button) => {
+    button.addEventListener("click", handleHeatmapToggle);
+  });
 }
+
+
+function buildHeatmapCapabilityRows(items) {
+  const capabilities = unique(items.map((item) => item.capacidad));
+
+  return capabilities.map((capability) => {
+    const capabilityItems = items.filter((item) => item.capacidad === capability);
+    const calculatedItems = capabilityItems.map((item) => calculate(item));
+    const scoredItems = calculatedItems.filter((metrics) => !metrics.isPending);
+
+    const procesos = average(
+      capabilityItems.map((item) => item.scores.procesos).filter(Number.isFinite),
+    );
+
+    const tecnologia = average(
+      capabilityItems.map((item) => item.scores.tecnologia).filter(Number.isFinite),
+    );
+
+    const organizacion = average(
+      capabilityItems.map((item) => item.scores.organizacion).filter(Number.isFinite),
+    );
+
+    const scoreMedio = average(scoredItems.map((metrics) => metrics.scoreMedio));
+    const gap = scoreMedio === null ? null : round2(Math.max(0, state.meta.targetMaturity - scoreMedio));
+    const prioridad = priorityFromGap(gap);
+
+    return {
+      capability,
+      items: capabilityItems,
+      procesos,
+      tecnologia,
+      organizacion,
+      scoreMedio,
+      gap,
+      prioridad,
+    };
+  });
+}
+
+
+function handleHeatmapToggle(event) {
+  const button = event.currentTarget;
+  const capability = button.dataset.capabilityToggle;
+  const isExpanded = button.getAttribute("aria-expanded") === "true";
+  const nextExpanded = !isExpanded;
+
+  button.setAttribute("aria-expanded", String(nextExpanded));
+  const detailCount = els.heatmapTable.querySelectorAll(
+  `[data-capability-detail="${CSS.escape(capability)}"]`,
+).length;
+
+button.textContent = nextExpanded
+  ? "Ocultar subcapacidades"
+  : `Ver subcapacidades (${detailCount})`;
+
+  els.heatmapTable
+    .querySelectorAll(`[data-capability-detail="${CSS.escape(capability)}"]`)
+    .forEach((row) => {
+      row.classList.toggle("is-hidden", !nextExpanded);
+    });
+}
+
 
 function renderRoadmap() {
   
