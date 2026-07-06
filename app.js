@@ -54,6 +54,50 @@ const PRIORITY_ORDER = {
 
 const STATUS_OPTIONS = ["No iniciado", "En curso", "Completado", "Bloqueado"];
 
+
+const AI_INITIATIVES_BY_CAPABILITY = {
+  "Presupuestos y previsiones": {
+    subcapacidad: "1.1-1.4",
+    cases:
+      "Develop guided workflows for creating budgets; On demand forecasting and scenario modeling; AI-supported budget allocation",
+    advanced:
+      "Planificación driver-based, rolling forecast, escenarios automatizados y workflows colaborativos",
+    source: "F3M_AI_Mapping_Consolidado_v1.xlsx",
+  },
+  "Informes de gestión del rendimiento": {
+    subcapacidad: "2.1-2.4",
+    cases:
+      "Mgmt Reporting Actuals Plan Variance + Commentary; Generate account variance analysis and intelligent explanations; FinanceAI Insights Platform",
+    advanced:
+      "Reporting automatizado con commentary, insights, alertas y explicación de desviaciones",
+    source: "F3M_AI_Mapping_Consolidado_v1.xlsx",
+  },
+  "Evaluación business case": {
+    subcapacidad: "3.1-3.4",
+    cases: "Summarize and score project proposals; Project-level recommendations",
+    advanced:
+      "Scoring de iniciativas, priorización dinámica y seguimiento de beneficios",
+    source: "F3M_AI_Mapping_Consolidado_v1.xlsx",
+  },
+  "Información y apoyo a la toma de decisiones": {
+    subcapacidad: "4.1-4.4",
+    cases:
+      "Perform analysis and investigation and provide insights on demand; Data access for all; Enterprise-wide data search and access",
+    advanced:
+      "Decision intelligence, insights predictivos y autoservicio gobernado",
+    source: "F3M_AI_Mapping_Consolidado_v1.xlsx",
+  },
+  "Planificación largo plazo": {
+    subcapacidad: "5.1-5.4",
+    cases:
+      "Generate investing strategies; Identify patterns to predict future financial performance; Integrated business planning",
+    advanced:
+      "Planificación estratégica continua, simulación avanzada y asignación dinámica de recursos",
+    source: "F3M_AI_Mapping_Consolidado_v1.xlsx",
+  },
+};
+
+
 const state = {
   meta: null,
   items: [],
@@ -130,6 +174,13 @@ function cacheElements() {
     "assessmentList",
     "heatmapTable",
     "roadmapTable",
+    "aiInitiativeModal",
+    "closeAiInitiativeModalButton",
+    "aiModalCapability",
+    "aiModalSubcapability",
+    "aiModalCases",
+    "aiModalAdvanced",
+    "aiModalSource",
     "scoringCriteriaModal", // NUEVO: modal de criterios F3M
     "closeScoringCriteriaModalButton", // NUEVO: botón cerrar modal
     "saveStatus", // NUEVO: indicador visual de guardado
@@ -156,6 +207,7 @@ function bindGlobalEvents() {
   els.resetButton.addEventListener("click", resetScenario);
   setupActiveTabObserver(); // NUEVO: marca automáticamente la pestaña activa según la sección visible
   setupScoringCriteriaModal(); // NUEVO: configura modal de criterios F3M
+  setupAiInitiativeModal();
 }
 
 function normalizeItem(item) {
@@ -322,6 +374,59 @@ function activateScoringCriteriaTab(tabKey) {
   els.scoringCriteriaModal.querySelectorAll(".criteria-panel").forEach((panel) => {
     panel.classList.toggle("active", panel.dataset.criteriaPanel === tabKey);
   });
+}
+
+
+function setupAiInitiativeModal() {
+  if (!els.aiInitiativeModal) {
+    return;
+  }
+
+  els.roadmapTable.addEventListener("click", (event) => {
+    const button = event.target.closest(".roadmap-ai-button");
+
+    if (!button) {
+      return;
+    }
+
+    openAiInitiativeModal(button.dataset.capability);
+  });
+
+  els.closeAiInitiativeModalButton?.addEventListener("click", closeAiInitiativeModal);
+
+  els.aiInitiativeModal.addEventListener("click", (event) => {
+    if (event.target === els.aiInitiativeModal) {
+      closeAiInitiativeModal();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !els.aiInitiativeModal.hidden) {
+      closeAiInitiativeModal();
+    }
+  });
+}
+
+function openAiInitiativeModal(capability) {
+  const initiative = AI_INITIATIVES_BY_CAPABILITY[capability];
+
+  if (!initiative) {
+    showNotice("No hay iniciativa IA asociada a esta capacidad.", true);
+    return;
+  }
+
+  els.aiModalCapability.textContent = capability;
+  els.aiModalSubcapability.textContent = `Subcapacidades relacionadas: ${initiative.subcapacidad}`;
+  els.aiModalCases.textContent = initiative.cases;
+  els.aiModalAdvanced.textContent = initiative.advanced;
+  els.aiModalSource.textContent = `Fuente: ${initiative.source}`;
+
+  els.aiInitiativeModal.hidden = false;
+  els.closeAiInitiativeModalButton?.focus();
+}
+
+function closeAiInitiativeModal() {
+  els.aiInitiativeModal.hidden = true;
 }
 
 
@@ -849,15 +954,17 @@ button.textContent = nextExpanded
 
 
 function renderRoadmap() {
-  
-  const roadmapItems = getVisibleItems(); // MODIFICADO: el roadmap ahora respeta los filtros activos
+  const roadmapItems = getVisibleItems(); // Roadmap respeta filtros activos
 
   const rows = roadmapItems
-
     .map((item) => ({ item, metrics: calculate(item) }))
     .sort((a, b) => {
       const priorityDiff = PRIORITY_ORDER[a.metrics.prioridad] - PRIORITY_ORDER[b.metrics.prioridad];
-      if (priorityDiff) return priorityDiff;
+
+      if (priorityDiff) {
+        return priorityDiff;
+      }
+
       return (b.metrics.gap || 0) - (a.metrics.gap || 0);
     })
     .map(({ item, metrics }) => `
@@ -867,12 +974,36 @@ function renderRoadmap() {
         <td class="number">${formatNumber(metrics.gap)}</td>
         <td>${priorityBadge(metrics.prioridad)}</td>
         <td>${escapeHtml(item.iniciativaSugerida)}</td>
+        <td>
+          <button
+            class="roadmap-ai-button"
+            type="button"
+            data-capability="${escapeAttr(item.capacidad)}"
+            aria-label="Ver iniciativa IA para ${escapeAttr(item.capacidad)}"
+          >
+            IA
+          </button>
+        </td>
         <td><span class="status-chip">${escapeHtml(metrics.oleada)}</span></td>
-        <td><input class="inline-input roadmap-owner" data-id="${escapeAttr(item.id)}" value="${escapeAttr(item.owner)}" placeholder="Owner"></td>
+        <td>
+          <input
+            class="inline-input roadmap-owner"
+            data-id="${escapeAttr(item.id)}"
+            value="${escapeAttr(item.owner)}"
+            placeholder="Owner"
+          >
+        </td>
         <td>${statusSelect(item)}</td>
-        <td><textarea class="roadmap-comment" data-id="${escapeAttr(item.id)}" placeholder="Comentarios">${escapeHtml(item.comentario)}</textarea></td>
+        <td>
+          <textarea
+            class="roadmap-comment"
+            data-id="${escapeAttr(item.id)}"
+            placeholder="Comentarios"
+          >${escapeHtml(item.comentario)}</textarea>
+        </td>
       </tr>
-    `);
+    `)
+    .join("");
 
   els.roadmapTable.innerHTML = `
     <thead>
@@ -882,29 +1013,31 @@ function renderRoadmap() {
         <th class="number">Gap</th>
         <th>Prioridad</th>
         <th>Iniciativa sugerida</th>
+        <th>IA</th>
         <th>Oleada</th>
         <th>Owner</th>
         <th>Estado</th>
         <th>Comentarios</th>
       </tr>
     </thead>
-    
     <tbody>
-      ${rows.join("") || `<tr><td colspan="9">No hay iniciativas para los filtros actuales.</td></tr>`}
+      ${rows || `<tr><td colspan="10">No hay iniciativas para los filtros actuales.</td></tr>`}
     </tbody>
-
   `;
 
   els.roadmapTable.querySelectorAll(".roadmap-owner").forEach((input) => {
     input.addEventListener("input", handleRoadmapFieldChange);
   });
+
   els.roadmapTable.querySelectorAll(".roadmap-status").forEach((select) => {
     select.addEventListener("change", handleRoadmapFieldChange);
   });
+
   els.roadmapTable.querySelectorAll(".roadmap-comment").forEach((textarea) => {
     textarea.addEventListener("input", handleRoadmapFieldChange);
   });
 }
+
 
 function statusSelect(item) {
   return `
