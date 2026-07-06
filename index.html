@@ -85,14 +85,43 @@
             <table class="data-table" id="summaryTable"></table>
           </div>
 
-        <div class="panel radar-panel">
-          <div class="panel-heading">
+                <div class="summary-radar-block">
+          <div class="panel-heading radar-heading">
             <h3>Radar por capacidad</h3>
-          <span class="small-note">Promedio de Procesos, Tecnología y Organización por capacidad</span>
+            <span class="small-note">Vista separada por pilar para comparar mejor diferencias entre capacidades</span>
           </div>
-        <div class="radar-chart-wrap">
-          <canvas id="capabilityRadarChart" aria-label="Gráfico radar por capacidad" role="img"></canvas>
-        </div>
+
+          <div class="radar-grid">
+            <article class="radar-mini-card">
+              <div class="radar-mini-heading">
+                <span class="radar-dot radar-dot-processes"></span>
+                <h4>Procesos</h4>
+              </div>
+              <div class="radar-chart-wrap">
+                <canvas id="capabilityRadarProcessesChart" aria-label="Radar de Procesos por capacidad" role="img"></canvas>
+              </div>
+            </article>
+
+            <article class="radar-mini-card">
+              <div class="radar-mini-heading">
+                <span class="radar-dot radar-dot-technology"></span>
+                <h4>Tecnología</h4>
+              </div>
+              <div class="radar-chart-wrap">
+                <canvas id="capabilityRadarTechnologyChart" aria-label="Radar de Tecnología por capacidad" role="img"></canvas>
+              </div>
+            </article>
+
+            <article class="radar-mini-card">
+              <div class="radar-mini-heading">
+                <span class="radar-dot radar-dot-organization"></span>
+                <h4>Organización</h4>
+              </div>
+              <div class="radar-chart-wrap">
+                <canvas id="capabilityRadarOrganizationChart" aria-label="Radar de Organización por capacidad" role="img"></canvas>
+              </div>
+            </article>
+          </div>
         </div>
       </section>
 

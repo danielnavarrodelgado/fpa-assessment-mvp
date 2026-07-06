@@ -59,7 +59,12 @@ const state = {
   items: [],
 };
 
-let capabilityRadarChart = null; // NUEVO: instancia del gráfico radar
+let capabilityRadarCharts = {
+  procesos: null,
+  tecnologia: null,
+  organizacion: null,
+};
+``
 
 let isApplyingRemoteScenario = false; // NUEVO: evita guardar de vuelta mientras estamos cargando datos remotos
 
@@ -116,7 +121,9 @@ function cacheElements() {
     "priorityBars",
     "leverBars",
     "summaryTable",
-    "capabilityRadarChart", // NUEVO: canvas del radar por capacidad
+    "capabilityRadarProcessesChart",
+    "capabilityRadarTechnologyChart",
+    "capabilityRadarOrganizationChart",
     "capacityFilter",
     "priorityFilter",
     "searchInput",
@@ -462,50 +469,63 @@ function renderSummaryTable() {
 }
 
 
+
 function renderCapabilityRadar() {
-  if (!els.capabilityRadarChart || typeof Chart === "undefined") {
+  if (typeof Chart === "undefined") {
     return;
   }
 
   const radarData = buildCapabilityRadarData();
 
+  renderSingleCapabilityRadar({
+  key: "procesos",
+  canvas: els.capabilityRadarProcessesChart,
+  label: "Procesos",
+  values: radarData.procesos,
+  color: "#86BC25",
+  backgroundColor: "rgba(134, 188, 37, 0.24)",
+  radarData,
+});
+
+renderSingleCapabilityRadar({
+  key: "tecnologia",
+  canvas: els.capabilityRadarTechnologyChart,
+  label: "Tecnología",
+  values: radarData.tecnologia,
+  color: "#ED8B00",
+  backgroundColor: "rgba(237, 139, 0, 0.22)",
+  radarData,
+});
+
+renderSingleCapabilityRadar({
+  key: "organizacion",
+  canvas: els.capabilityRadarOrganizationChart,
+  label: "Organización",
+  values: radarData.organizacion,
+  color: "#012169",
+  backgroundColor: "rgba(1, 33, 105, 0.18)",
+  radarData,
+});
+}
+
+function renderSingleCapabilityRadar({ key, canvas, label, values, color, backgroundColor, radarData }) {
+  if (!canvas) {
+    return;
+  }
+
   const chartData = {
     labels: radarData.displayLabels,
     datasets: [
       {
-        label: "Procesos",
-        data: radarData.procesos,
+        label,
+        data: values,
         fill: true,
-        backgroundColor: "rgba(134, 188, 37, 0.24)",
-        borderColor: "#86bc25",
-        pointBackgroundColor: "#86bc25",
+        backgroundColor,
+        borderColor: color,
+        pointBackgroundColor: color,
         pointBorderColor: "#ffffff",
         pointHoverBackgroundColor: "#ffffff",
-        pointHoverBorderColor: "#86bc25",
-      },
-      {
-        label: "Tecnología",
-        data: radarData.tecnologia,
-        fill: true,
-        
-        backgroundColor: "rgba(200, 121, 0, 0.20)", // MODIFICADO: ámbar/naranja más diferenciado
-        borderColor: "#c87900", // MODIFICADO
-        pointBackgroundColor: "#c87900", // MODIFICADO
-        pointBorderColor: "#ffffff",
-        pointHoverBackgroundColor: "#ffffff",
-        pointHoverBorderColor: "#c87900", // MODIFICA
-
-      },
-      {
-        label: "Organización",
-        data: radarData.organizacion,
-        fill: true,
-        backgroundColor: "rgba(37, 94, 145, 0.18)",
-        borderColor: "#255e91",
-        pointBackgroundColor: "#255e91",
-        pointBorderColor: "#ffffff",
-        pointHoverBackgroundColor: "#ffffff",
-        pointHoverBorderColor: "#255e91",
+        pointHoverBorderColor: color,
       },
     ],
   };
@@ -513,23 +533,12 @@ function renderCapabilityRadar() {
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    
     layout: {
-      padding: 0, // NUEVO: reduce el espacio interno del gráfico para aprovechar mejor el panel
+      padding: 4,
     },
-
     plugins: {
       legend: {
-        position: "bottom",
-        labels: {
-          boxWidth: 14,
-          boxHeight: 14,
-          usePointStyle: true,
-          font: {
-            size: 12,
-            weight: "700",
-          },
-        },
+        display: false,
       },
       tooltip: {
         callbacks: {
@@ -549,12 +558,17 @@ function renderCapabilityRadar() {
           stepSize: 1,
           backdropColor: "transparent",
           color: "#5c665e",
+          font: {
+            size: 11,
+            weight: "700",
+          },
         },
         pointLabels: {
           color: "#323a35",
+          padding: 8,
           font: {
-            size: 12,
-            weight: "700",
+            size: 11,
+            weight: "800",
           },
         },
         grid: {
@@ -576,26 +590,29 @@ function renderCapabilityRadar() {
     },
   };
 
-  if (capabilityRadarChart) {
-    capabilityRadarChart.data = chartData;
-    capabilityRadarChart.options = chartOptions;
-    capabilityRadarChart.update();
+  if (capabilityRadarCharts[key]) {
+    capabilityRadarCharts[key].data = chartData;
+    capabilityRadarCharts[key].options = chartOptions;
+    capabilityRadarCharts[key].update();
     return;
   }
 
-  capabilityRadarChart = new Chart(els.capabilityRadarChart, {
+  capabilityRadarCharts[key] = new Chart(canvas, {
     type: "radar",
     data: chartData,
     options: chartOptions,
   });
 }
 
+
+
+
 function buildCapabilityRadarData() {
   const rows = buildSummaryRows();
 
   return {
     originalLabels: rows.map((row) => row.Capacidad),
-    displayLabels: rows.map((row) => wrapRadarLabel(row.Capacidad)),
+    displayLabels: rows.map((row) => getRadarShortLabel(row.Capacidad)),
     procesos: rows.map((row) => toRadarNumber(row.Procesos)),
     tecnologia: rows.map((row) => toRadarNumber(row.Tecnologia)),
     organizacion: rows.map((row) => toRadarNumber(row.Organizacion)),
@@ -607,29 +624,17 @@ function toRadarNumber(value) {
   return Number.isFinite(number) ? number : null;
 }
 
-function wrapRadarLabel(label) {
-  const words = String(label).split(" ");
-  const lines = [];
-  let currentLine = "";
 
-  words.forEach((word) => {
-    const nextLine = currentLine ? `${currentLine} ${word}` : word;
+function getRadarShortLabel(label) {
+  const shortLabels = {
+    "Presupuestos y previsiones": ["Presupuestos", "y previsiones"],
+    "Informes de gestión del rendimiento": ["Informes", "gestión"],
+    "Evaluación business case": ["Business", "case"],
+    "Información y apoyo a la toma de decisiones": ["Apoyo", "decisiones"],
+    "Planificación largo plazo": ["Planificación", "largo plazo"],
+  };
 
-    if (nextLine.length > 18) {
-      if (currentLine) {
-        lines.push(currentLine);
-      }
-      currentLine = word;
-    } else {
-      currentLine = nextLine;
-    }
-  });
-
-  if (currentLine) {
-    lines.push(currentLine);
-  }
-
-  return lines;
+  return shortLabels[label] || wrapRadarLabel(label);
 }
 
 
