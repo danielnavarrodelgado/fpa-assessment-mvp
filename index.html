@@ -15,13 +15,12 @@
           <p class="header-copy">Diagnóstico preliminar de madurez por subcapacidad, palanca y roadmap sugerido.</p>
         </div>
         <div class="header-actions" aria-label="Acciones de escenario">
-          <span class="save-status" id="saveStatus" aria-live="polite">Listo</span> <!-- NUEVO: indicador de guardado -->
+          <button class="primary-button" id="exportPdfButton" type="button">Exportar PDF</button>
+          <button class="primary-button" id="exportCsvButton" type="button">Exportar CSV</button>
           <button class="secondary-button" id="importJsonButton" type="button">Importar JSON</button>
           <button class="secondary-button" id="exportJsonButton" type="button">Exportar JSON</button>
-          <button class="primary-button" id="exportCsvButton" type="button">Exportar CSV</button>
-          <button class="secondary-button" id="exportPdfButton" type="button">Exportar PDF</button> <!-- NUEVO: botón para informe PDF -->
-          <button class="ghost-button" id="resetButton" type="button">Restaurar base</button>
-          
+          <button class="ghost-button danger-ghost-button" id="resetButton" type="button">Restaurar base</button>
+
           <input id="scenarioFileInput" type="file" accept="application/json,.json" hidden>
         </div>
       </div>
@@ -43,9 +42,15 @@
 
       <nav class="tabs" aria-label="Secciones del assessment">
         <a href="#dashboard">Dashboard</a>
-        <a href="#assessment">Assessment</a>
+        <a href="#assessment">
+          Assessment
+          <span class="tab-badge" id="assessmentTabBadge">0/0</span>
+        </a>
         <a href="#heatmap">Heatmap</a>
-        <a href="#roadmap">Roadmap</a>
+        <a href="#roadmap">
+          Roadmap
+          <span class="tab-badge tab-badge-alert" id="roadmapTabBadge">0 Alta</span>
+        </a>
       </nav>
 
       <section id="dashboard" class="section-block">

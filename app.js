@@ -178,6 +178,8 @@ function cacheElements() {
     "heatmapTable",
     "heatmapExpandToggle",
     "roadmapTable",
+    "assessmentTabBadge",
+    "roadmapTabBadge",
     "aiInitiativeModal",
     "closeAiInitiativeModalButton",
     "aiModalCapability",
@@ -435,6 +437,24 @@ function closeAiInitiativeModal() {
 }
 
 
+function updateNavigationBadges() {
+  if (!els.assessmentTabBadge || !els.roadmapTabBadge || !state.items.length) {
+    return;
+  }
+
+  const metrics = state.items.map((item) => calculate(item));
+  const scoredCount = metrics.filter((entry) => !entry.isPending).length;
+  const totalCount = state.items.length;
+  const highPriorityCount = metrics.filter((entry) => entry.prioridad === "Alta").length;
+
+  els.assessmentTabBadge.textContent = `${scoredCount}/${totalCount}`;
+  els.roadmapTabBadge.textContent = `${highPriorityCount} Alta`;
+
+  els.roadmapTabBadge.classList.toggle("tab-badge-alert", highPriorityCount > 0);
+}
+
+
+
 function renderAll() {
   if (!state.items.length) return;
   els.sourceNote.textContent = `Fuente: ${state.meta.sourceFile} · Objetivo de madurez ${state.meta.targetMaturity}`;
@@ -442,6 +462,7 @@ function renderAll() {
   renderAssessments();
   renderHeatmap();
   renderRoadmap();
+  updateNavigationBadges();
 }
 
 function populateCapacityFilter() {

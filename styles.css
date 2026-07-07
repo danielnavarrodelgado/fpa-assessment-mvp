@@ -121,11 +121,34 @@ h4 {
 }
 
 .header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
-  min-width: min(100%, 520px);
+display: flex;
+align-items: center;
+justify-content: flex-end;
+gap: 10px;
+flex-wrap: wrap;
+}
+
+
+
+.danger-ghost-button {
+opacity: 0.82;
+}
+
+.danger-ghost-button:hover {
+opacity: 1;
+border-color: rgba(187, 49, 40, 0.55);
+color: #ffe5e1;
+}
+
+@media (max-width: 900px) {
+.header-actions {
+justify-content: flex-start;
+}
+
+.action-group {
+border-radius: 16px;
+flex-wrap: wrap;
+}
 }
 
 
@@ -191,6 +214,15 @@ max-width: calc(100% - 28px);
   color: #10140e;
 }
 
+
+.primary-button:hover {
+background: #9bd734;
+border-color: #9bd734;
+color: #10140e;
+transform: translateY(-1px);
+}
+
+
 .secondary-button {
   background: #ffffff;
   color: #10140e;
@@ -224,6 +256,7 @@ max-width: calc(100% - 28px);
   align-items: center;
   min-height: 36px;
   padding: 0 12px;
+  gap: 7px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--surface);
@@ -239,6 +272,35 @@ background: var(--green); /* NUEVO: resalta la pestaña activa */
 border-color: var(--green); /* NUEVO: mantiene coherencia visual con el color activo */
 color: #10140e; /* NUEVO: mejora contraste sobre fondo verde */
 box-shadow: 0 6px 14px rgba(134, 188, 37, 0.22); /* NUEVO: da sensación de estado seleccionado */
+}
+
+
+.tab-badge {
+display: inline-flex;
+align-items: center;
+justify-content: center;
+min-height: 20px;
+padding: 0 7px;
+border: 1px solid var(--line);
+border-radius: 999px;
+background: var(--surface-muted);
+color: var(--muted);
+font-size: 0.72rem;
+font-weight: 850;
+line-height: 1;
+white-space: nowrap;
+}
+
+.tab-badge-alert {
+border-color: #f9d2cc;
+background: #f9d2cc;
+color: #7d1f19;
+}
+
+.tabs a.active .tab-badge {
+border-color: rgba(255, 255, 255, 0.75);
+background: rgba(255, 255, 255, 0.9);
+color: #10140e;
 }
 
 
@@ -551,9 +613,36 @@ display: none;
   color: var(--muted);
 }
 
+
 .table-wrap {
-  overflow-x: auto;
+position: relative;
+overflow-x: auto;
+overflow-y: hidden;
+-webkit-overflow-scrolling: touch;
+scrollbar-width: thin;
+scrollbar-color: rgba(134, 188, 37, 0.65) #edf1e8;
 }
+
+
+
+.table-wrap .data-table {
+min-width: 980px;
+}
+
+.table-wrap::-webkit-scrollbar {
+height: 9px;
+}
+
+.table-wrap::-webkit-scrollbar-track {
+background: #edf1e8;
+border-radius: 999px;
+}
+
+.table-wrap::-webkit-scrollbar-thumb {
+background: rgba(134, 188, 37, 0.75);
+border-radius: 999px;
+}
+
 
 .data-table {
   width: 100%;
