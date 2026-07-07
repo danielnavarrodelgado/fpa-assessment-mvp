@@ -108,7 +108,10 @@ let capabilityRadarCharts = {
   tecnologia: null,
   organizacion: null,
 };
-``
+
+
+const expandedHeatmapCapabilities = new Set(); // NUEVO: mantiene abiertas las capacidades desplegadas del heatmap entre renders
+
 
 let isApplyingRemoteScenario = false; // NUEVO: evita guardar de vuelta mientras estamos cargando datos remotos
 
@@ -743,6 +746,32 @@ function getRadarShortLabel(label) {
 }
 
 
+function wrapRadarLabel(label) {
+  const words = String(label).split(" ");
+  const lines = [];
+  let currentLine = "";
+
+  words.forEach((word) => {
+    const nextLine = currentLine ? `${currentLine} ${word}` : word;
+
+    if (nextLine.length > 18) {
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+
+      currentLine = word;
+    } else {
+      currentLine = nextLine;
+    }
+  });
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines;
+}
+
 
 function renderAssessments() {
   const items = getVisibleItems();
@@ -818,18 +847,21 @@ function handleScoreChange(event) {
   renderAll();
 }
 
+
 function renderHeatmap() {
   const visibleItems = getVisibleItems();
   const capabilityRows = buildHeatmapCapabilityRows(visibleItems);
 
   const rows = capabilityRows
     .map((entry) => {
+      const isExpanded = expandedHeatmapCapabilities.has(entry.capability);
+
       const detailRows = entry.items
         .map((item) => {
           const metrics = calculate(item);
 
           return `
-            <tr class="heatmap-detail-row is-hidden" data-capability-detail="${escapeAttr(entry.capability)}">
+            <tr class="heatmap-detail-row ${isExpanded ? "" : "is-hidden"}" data-capability-detail="${escapeAttr(entry.capability)}">
               <td class="heatmap-detail-capability">${escapeHtml(item.capacidad)}</td>
               <td>${escapeHtml(item.subcapacidad)}</td>
               ${LEVERS.map((lever) => heatScoreCell(item.scores[lever.key])).join("")}
@@ -851,9 +883,9 @@ function renderHeatmap() {
               class="heatmap-toggle"
               type="button"
               data-capability-toggle="${escapeAttr(entry.capability)}"
-              aria-expanded="false"
+              aria-expanded="${String(isExpanded)}"
             >
-              Ver subcapacidades (${entry.items.length})
+              ${isExpanded ? "Ocultar subcapacidades" : `Ver subcapacidades (${entry.items.length})`}
             </button>
           </td>
           ${heatScoreCell(entry.procesos)}
@@ -936,20 +968,24 @@ function handleHeatmapToggle(event) {
   const isExpanded = button.getAttribute("aria-expanded") === "true";
   const nextExpanded = !isExpanded;
 
+  if (nextExpanded) {
+    expandedHeatmapCapabilities.add(capability);
+  } else {
+    expandedHeatmapCapabilities.delete(capability);
+  }
+
+  const detailRows = els.heatmapTable.querySelectorAll(
+    `[data-capability-detail="${CSS.escape(capability)}"]`,
+  );
+
   button.setAttribute("aria-expanded", String(nextExpanded));
-  const detailCount = els.heatmapTable.querySelectorAll(
-  `[data-capability-detail="${CSS.escape(capability)}"]`,
-).length;
+  button.textContent = nextExpanded
+    ? "Ocultar subcapacidades"
+    : `Ver subcapacidades (${detailRows.length})`;
 
-button.textContent = nextExpanded
-  ? "Ocultar subcapacidades"
-  : `Ver subcapacidades (${detailCount})`;
-
-  els.heatmapTable
-    .querySelectorAll(`[data-capability-detail="${CSS.escape(capability)}"]`)
-    .forEach((row) => {
-      row.classList.toggle("is-hidden", !nextExpanded);
-    });
+  detailRows.forEach((row) => {
+    row.classList.toggle("is-hidden", !nextExpanded);
+  });
 }
 
 
