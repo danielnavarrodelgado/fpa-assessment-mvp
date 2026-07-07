@@ -176,6 +176,7 @@ function cacheElements() {
     "searchInput",
     "assessmentList",
     "heatmapTable",
+    "heatmapExpandToggle",
     "roadmapTable",
     "aiInitiativeModal",
     "closeAiInitiativeModalButton",
@@ -208,6 +209,7 @@ function bindGlobalEvents() {
   els.exportCsvButton.addEventListener("click", exportCsv);
   els.exportPdfButton.addEventListener("click", exportPdfReport); // NUEVO: genera informe imprimible/PDF
   els.resetButton.addEventListener("click", resetScenario);
+  els.heatmapExpandToggle?.addEventListener("click", handleHeatmapExpandToggleAll);
   setupActiveTabObserver(); // NUEVO: marca automáticamente la pestaña activa según la sección visible
   setupScoringCriteriaModal(); // NUEVO: configura modal de criterios F3M
   setupAiInitiativeModal();
@@ -921,6 +923,9 @@ function renderHeatmap() {
   els.heatmapTable.querySelectorAll(".heatmap-toggle").forEach((button) => {
     button.addEventListener("click", handleHeatmapToggle);
   });
+
+  updateHeatmapExpandAllButton(capabilityRows); // NUEVO: sincroniza texto Expandir/Colapsar todo
+
 }
 
 
@@ -986,6 +991,46 @@ function handleHeatmapToggle(event) {
   detailRows.forEach((row) => {
     row.classList.toggle("is-hidden", !nextExpanded);
   });
+}
+
+
+function handleHeatmapExpandToggleAll() {
+  const capabilityRows = buildHeatmapCapabilityRows(getVisibleItems());
+  const visibleCapabilities = capabilityRows.map((entry) => entry.capability);
+
+  if (!visibleCapabilities.length) {
+    return;
+  }
+
+  const allExpanded = visibleCapabilities.every((capability) =>
+    expandedHeatmapCapabilities.has(capability),
+  );
+
+  if (allExpanded) {
+    visibleCapabilities.forEach((capability) => {
+      expandedHeatmapCapabilities.delete(capability);
+    });
+  } else {
+    visibleCapabilities.forEach((capability) => {
+      expandedHeatmapCapabilities.add(capability);
+    });
+  }
+
+  renderHeatmap();
+}
+
+function updateHeatmapExpandAllButton(capabilityRows) {
+  if (!els.heatmapExpandToggle) {
+    return;
+  }
+
+  const visibleCapabilities = capabilityRows.map((entry) => entry.capability);
+  const allExpanded =
+    visibleCapabilities.length > 0 &&
+    visibleCapabilities.every((capability) => expandedHeatmapCapabilities.has(capability));
+
+  els.heatmapExpandToggle.textContent = allExpanded ? "Colapsar todo" : "Expandir todo";
+  els.heatmapExpandToggle.disabled = visibleCapabilities.length === 0;
 }
 
 
